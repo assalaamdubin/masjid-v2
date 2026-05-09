@@ -31,6 +31,30 @@ export async function createTransaksi(formData: FormData, entityId: string, pers
   revalidatePath('/dashboard')
 }
 
+export async function updateTransaksi(id: string, formData: FormData) {
+  const date = formData.get('date') as string
+  const amount = formData.get('amount') as string
+  const categoryId = formData.get('categoryId') as string
+  const description = formData.get('description') as string
+  const payerName = formData.get('payerName') as string
+  const paymentMethod = formData.get('paymentMethod') as string
+
+  await prisma.transaction.update({
+    where: { id },
+    data: {
+      date: new Date(date),
+      amount: parseFloat(amount),
+      categoryId,
+      description,
+      payerName,
+      paymentMethod,
+    }
+  })
+
+  revalidatePath('/dashboard/transaksi')
+  revalidatePath('/dashboard')
+}
+
 export async function deleteTransaksi(id: string) {
   await prisma.transaction.delete({ where: { id } })
   revalidatePath('/dashboard/transaksi')

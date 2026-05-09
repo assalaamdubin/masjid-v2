@@ -70,6 +70,12 @@ export default async function LoginPage({
           </a>
         </p>
 
+        <div className="mt-4 pt-4 border-t border-gray-100 text-center">
+          <a href="/publik" className="text-xs text-gray-400 hover:text-emerald-600 transition-colors">
+            📊 Lihat Laporan Keuangan Publik
+          </a>
+        </div>
+
         <p className="text-center text-xs text-gray-400 mt-4">
           © 2025 Masjid Al-Salam Kintamani Duta Bintaro
         </p>

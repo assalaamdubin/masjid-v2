@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 const allMenus = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN', 'VIEWER'] },
   { href: '/dashboard/transaksi', label: 'Transaksi', icon: '💰', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN'] },
+  { href: '/dashboard/approval', label: 'Approval', icon: '✅', roles: ['SUPER_ADMIN', 'KETUA'] },
   { href: '/dashboard/kategori', label: 'Kategori', icon: '🏷️', roles: ['SUPER_ADMIN', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN'] },
   { href: '/dashboard/laporan', label: 'Laporan', icon: '📋', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN', 'VIEWER'] },
   { href: '/dashboard/admin/users', label: 'Manajemen User', icon: '👥', roles: ['SUPER_ADMIN'] },
@@ -66,37 +67,24 @@ export default function Sidebar({ role }: { role: string | null }) {
 
   return (
     <>
-      {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col min-h-screen">
         <SidebarContent />
       </aside>
 
-      {/* Mobile Top Bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Image
-            src="/logo-masjid.png"
-            alt="Logo Masjid"
-            width={32}
-            height={32}
-            className="object-contain"
-          />
+          <Image src="/logo-masjid.png" alt="Logo Masjid" width={32} height={32} className="object-contain" />
           <span className="font-bold text-gray-900 text-sm">Masjid Al-Salam</span>
         </div>
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-        >
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2 rounded-lg hover:bg-gray-100">
           <span className="text-xl">{mobileOpen ? '✕' : '☰'}</span>
         </button>
       </div>
 
-      {/* Mobile Overlay */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-30 bg-black/40" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Mobile Drawer */}
       <aside className={cn(
         'md:hidden fixed top-0 left-0 z-40 h-full w-64 bg-white flex flex-col transform transition-transform duration-300',
         mobileOpen ? 'translate-x-0' : '-translate-x-full'
