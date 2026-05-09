@@ -1,10 +1,12 @@
 import { login } from './actions'
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>
 }) {
+  const params = await searchParams
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
@@ -19,9 +21,9 @@ export default function LoginPage({
         </div>
 
         {/* Error Message */}
-        {searchParams.then(p => p.error) && (
+        {params.error && (
           <div className="bg-red-50 text-red-600 text-sm rounded-lg p-3 mb-6">
-            ⚠️ Email atau password salah
+            ⚠️ {params.error}
           </div>
         )}
 
