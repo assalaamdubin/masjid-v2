@@ -4,9 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { TransactionType } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 
-const DEFAULT_ENTITY_ID = 'dkm-default'
-
-export async function createKategori(formData: FormData) {
+export async function createKategori(formData: FormData, entityId: string) {
   const name = formData.get('name') as string
   const typeRaw = formData.get('type') as string
 
@@ -15,11 +13,7 @@ export async function createKategori(formData: FormData) {
   const type = typeRaw === 'income' ? TransactionType.INCOME : TransactionType.EXPENSE
 
   await prisma.category.create({
-    data: { 
-      name, 
-      type,
-      entityId: DEFAULT_ENTITY_ID
-    }
+    data: { name, type, entityId }
   })
 
   revalidatePath('/dashboard/kategori')
