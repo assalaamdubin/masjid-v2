@@ -144,16 +144,6 @@ function EntityCard({ entity, period }: { entity: Entity; period: Period }) {
       </div>
 
       <div className="px-6 pb-4">
-        
-          href="/dashboard/transaksi"
-          className={`block text-center text-xs font-medium py-2 rounded-lg transition-colors mt-2 ${
-            entity.type === 'DKM'
-              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-              : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-          }`}
-        >
-          Lihat semua transaksi →
-        </a>
       </div>
     </div>
   )
