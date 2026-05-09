@@ -16,12 +16,11 @@ export async function register(formData: FormData) {
     throw new Error('Semua field wajib diisi')
   }
 
-  // Cek email sudah terdaftar
   const existing = await prisma.person.findUnique({ where: { email } })
   if (existing) throw new Error('Email sudah terdaftar')
 
-  // Daftar ke Supabase Auth
   const supabase = await createClient()
+
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
@@ -29,7 +28,9 @@ export async function register(formData: FormData) {
 
   if (authError) throw new Error(authError.message)
 
-  // Buat Person dengan status PENDING
+  // Langsung sign out setelah register — tunggu approval dulu
+  await supabase.auth.signOut()
+
   const person = await prisma.person.create({
     data: {
       fullName,
@@ -40,7 +41,6 @@ export async function register(formData: FormData) {
     }
   })
 
-  // Buat User record
   await prisma.user.create({
     data: {
       personId: person.id,
@@ -49,7 +49,6 @@ export async function register(formData: FormData) {
     }
   })
 
-  // Buat EntityMember dengan status tidak aktif (pending approval)
   await prisma.entityMember.create({
     data: {
       personId: person.id,
