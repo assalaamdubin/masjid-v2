@@ -55,16 +55,12 @@ function filterByPeriod(transactions: any[], period: Period) {
 
 function buildGrafikData(transactions: any[], period: Period) {
   const now = new Date()
-
   if (period === 'weekly') {
     const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
     return Array.from({ length: 7 }, (_, i) => {
       const date = new Date(now)
       date.setDate(date.getDate() - (6 - i))
-      const dayTx = transactions.filter(t => {
-        const d = new Date(t.date)
-        return d.toDateString() === date.toDateString()
-      })
+      const dayTx = transactions.filter(t => new Date(t.date).toDateString() === date.toDateString())
       return {
         name: days[date.getDay()],
         pemasukan: dayTx.filter(t => t.type === 'INCOME').reduce((s, t) => s + Number(t.amount), 0),
@@ -118,9 +114,7 @@ function EntityCard({ entity, period }: { entity: Entity; period: Period }) {
       <div className="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-200">
         <div className="px-4 py-4 text-center">
           <p className="text-xs text-gray-500 mb-1">Saldo</p>
-          <p className={`text-base font-bold ${saldo >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
-            {formatRupiah(saldo)}
-          </p>
+          <p className={`text-base font-bold ${saldo >= 0 ? 'text-gray-900' : 'text-red-600'}`}>{formatRupiah(saldo)}</p>
         </div>
         <div className="px-4 py-4 text-center">
           <p className="text-xs text-emerald-600 mb-1">Pemasukan</p>
@@ -147,7 +141,6 @@ function EntityCard({ entity, period }: { entity: Entity; period: Period }) {
         </div>
       )}
 
-      {/* Grafik */}
       <div className="px-6 py-4 border-b border-gray-100">
         <GrafikKeuangan data={grafikData} title="" />
       </div>
@@ -165,3 +158,115 @@ function EntityCard({ entity, period }: { entity: Entity; period: Period }) {
               <div key={t.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm ${t.type === 'INCOME' ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                    {t.type === 'INCOME' ? '📈' : '📉'}
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-900">{t.category.name}</p>
+                    <p className="text-xs text-gray-400">
+                      {new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(new Date(t.date))}
+                    </p>
+                  </div>
+                </div>
+                <span className={`text-xs font-semibold ${t.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {t.type === 'INCOME' ? '+' : '-'}{formatRupiah(Number(t.amount))}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="px-6 pb-4">
+        
+          href="/dashboard/transaksi"
+          className={`block text-center text-xs font-medium py-2 rounded-lg transition-colors mt-2 ${entity.type === 'DKM' ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
+        >
+          Lihat semua transaksi →
+        </a>
+      </div>
+    </div>
+  )
+}
+
+export default function DashboardClient({
+  entities,
+  allTransaksiTerbaru,
+  isAdmin,
+  mosqueName,
+  entityIds,
+}: {
+  entities: Entity[]
+  allTransaksiTerbaru: Transaction[]
+  isAdmin: boolean
+  mosqueName: string
+  entityIds: string[]
+}) {
+  const [period, setPeriod] = useState<Period>('monthly')
+
+  const filteredAll = filterByPeriod(allTransaksiTerbaru, period)
+  const totalPemasukan = filteredAll.filter(t => t.type === 'INCOME').reduce((s, t) => s + Number(t.amount), 0)
+  const totalPengeluaran = filteredAll.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + Number(t.amount), 0)
+  const grafikAllData = buildGrafikData(allTransaksiTerbaru, period)
+
+  const periods: { value: Period; label: string }[] = [
+    { value: 'weekly', label: 'Mingguan' },
+    { value: 'monthly', label: 'Bulanan' },
+    { value: 'yearly', label: 'Tahunan' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+          {isAdmin && <p className="text-sm text-gray-500 mt-0.5">📊 {mosqueName} — Semua Entity</p>}
+        </div>
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+          {periods.map(p => (
+            <button
+              key={p.value}
+              onClick={() => setPeriod(p.value)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                period === p.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {isAdmin && entities.length > 1 && (
+        <>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white rounded-2xl p-5 border border-gray-200">
+              <p className="text-xs font-medium text-gray-500 mb-1">Total Saldo Gabungan</p>
+              <p className={`text-xl font-bold ${(totalPemasukan - totalPengeluaran) >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+                {formatRupiah(totalPemasukan - totalPengeluaran)}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Semua entity</p>
+            </div>
+            <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100">
+              <p className="text-xs font-medium text-emerald-600 mb-1">Total Pemasukan</p>
+              <p className="text-xl font-bold text-emerald-700">{formatRupiah(totalPemasukan)}</p>
+              <p className="text-xs text-emerald-500 mt-1">Semua entity</p>
+            </div>
+            <div className="bg-red-50 rounded-2xl p-5 border border-red-100">
+              <p className="text-xs font-medium text-red-600 mb-1">Total Pengeluaran</p>
+              <p className="text-xl font-bold text-red-600">{formatRupiah(totalPengeluaran)}</p>
+              <p className="text-xs text-red-400 mt-1">Semua entity</p>
+            </div>
+          </div>
+
+          <GrafikKeuangan data={grafikAllData} title="📊 Grafik Gabungan Semua Entity" />
+        </>
+      )}
+
+      <div className={`grid gap-6 ${entities.length > 1 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+        {entities.map(entity => (
+          <EntityCard key={entity.id} entity={entity} period={period} />
+        ))}
+      </div>
+    </div>
+  )
+}
