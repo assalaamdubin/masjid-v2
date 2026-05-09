@@ -6,15 +6,22 @@ import { redirect } from 'next/navigation'
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
-  const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-  }
+  const email = formData.get('email') as string
+  const password = formData.get('password') as string
 
-  const { error } = await supabase.auth.signInWithPassword(data)
+  console.log('Login attempt:', email)
+  console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  console.log('Auth error:', JSON.stringify(error))
+  console.log('Auth data:', JSON.stringify(data?.user?.email))
 
   if (error) {
-    redirect('/login?error=Email atau password salah')
+    redirect(`/login?error=${encodeURIComponent(error.message)}`)
   }
 
   redirect('/dashboard')
