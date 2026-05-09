@@ -14,26 +14,22 @@ export default async function DashboardPage() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
-  const [pemasukanBulanIni, pengeluaranBulanIni, allTransaksi, transaksiTerbaru] = await Promise.all([
+  const [pemasukanBulanIni, pengeluaranBulanIni, totalPemasukanAll, totalPengeluaranAll, transaksiTerbaru] = await Promise.all([
     prisma.transaction.aggregate({
-      where: {
-        entityId: 'dkm-default',
-        type: TransactionType.INCOME,
-        date: { gte: startOfMonth, lte: endOfMonth }
-      },
+      where: { entityId: 'dkm-default', type: TransactionType.INCOME, date: { gte: startOfMonth, lte: endOfMonth } },
       _sum: { amount: true }
     }),
     prisma.transaction.aggregate({
-      where: {
-        entityId: 'dkm-default',
-        type: TransactionType.EXPENSE,
-        date: { gte: startOfMonth, lte: endOfMonth }
-      },
+      where: { entityId: 'dkm-default', type: TransactionType.EXPENSE, date: { gte: startOfMonth, lte: endOfMonth } },
       _sum: { amount: true }
     }),
     prisma.transaction.aggregate({
-      where: { entityId: 'dkm-default' },
-      _sum: { amount: true },
+      where: { entityId: 'dkm-default', type: TransactionType.INCOME },
+      _sum: { amount: true }
+    }),
+    prisma.transaction.aggregate({
+      where: { entityId: 'dkm-default', type: TransactionType.EXPENSE },
+      _sum: { amount: true }
     }),
     prisma.transaction.findMany({
       where: { entityId: 'dkm-default' },
@@ -45,18 +41,19 @@ export default async function DashboardPage() {
 
   const totalPemasukan = Number(pemasukanBulanIni._sum.amount ?? 0)
   const totalPengeluaran = Number(pengeluaranBulanIni._sum.amount ?? 0)
-  const totalSaldo = Number(allTransaksi._sum.amount ?? 0)
+  const saldo = Number(totalPemasukanAll._sum.amount ?? 0) - Number(totalPengeluaranAll._sum.amount ?? 0)
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm font-medium text-gray-500">Total Saldo</p>
             <span className="text-2xl">💰</span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatRupiah(totalSaldo)}</p>
+          <p className={`text-2xl font-bold ${saldo >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+            {formatRupiah(saldo)}
+          </p>
           <p className="text-xs text-gray-400 mt-1">Semua transaksi</p>
         </div>
 
@@ -79,7 +76,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Transaksi Terbaru */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h3 className="font-semibold text-gray-900">Transaksi Terbaru</h3>
