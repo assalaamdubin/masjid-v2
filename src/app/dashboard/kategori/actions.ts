@@ -10,7 +10,7 @@ export async function createKategori(formData: FormData) {
 
   if (!name || !typeRaw) throw new Error('Data tidak lengkap')
 
-  const type = typeRaw === 'income' ? TransactionType.income : TransactionType.expense
+  const type = typeRaw === 'income' ? TransactionType.INCOME : TransactionType.EXPENSE
 
   await prisma.category.create({
     data: { name, type }
