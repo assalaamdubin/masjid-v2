@@ -37,10 +37,7 @@ export default function RegisterForm({ mosques }: { mosques: Mosque[] }) {
         <p className="text-gray-500 text-sm">
           Akun Anda sedang menunggu persetujuan Admin. Anda akan dihubungi setelah disetujui.
         </p>
-        
-          href="/login"
-          className="mt-6 inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition-colors"
-        >
+        <a href="/login" className="mt-6 inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition-colors">
           Kembali ke Login
         </a>
       </div>
@@ -56,9 +53,7 @@ export default function RegisterForm({ mosques }: { mosques: Mosque[] }) {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Nama Lengkap
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Lengkap</label>
         <input
           name="fullName"
           type="text"
@@ -69,9 +64,7 @@ export default function RegisterForm({ mosques }: { mosques: Mosque[] }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Email
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
         <input
           name="email"
           type="email"
@@ -82,9 +75,7 @@ export default function RegisterForm({ mosques }: { mosques: Mosque[] }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Password
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
         <input
           name="password"
           type="password"
@@ -96,9 +87,7 @@ export default function RegisterForm({ mosques }: { mosques: Mosque[] }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          No. HP
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">No. HP</label>
         <input
           name="phoneNumber"
           type="tel"
@@ -108,9 +97,7 @@ export default function RegisterForm({ mosques }: { mosques: Mosque[] }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Masjid
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Masjid</label>
         <select
           name="mosqueId"
           required
@@ -129,9 +116,7 @@ export default function RegisterForm({ mosques }: { mosques: Mosque[] }) {
 
       {selectedMosque && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Entity / Divisi
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Entity / Divisi</label>
           <select
             name="entityId"
             required
@@ -148,9 +133,7 @@ export default function RegisterForm({ mosques }: { mosques: Mosque[] }) {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Role yang Diminta
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Role yang Diminta</label>
         <select
           name="role"
           required
