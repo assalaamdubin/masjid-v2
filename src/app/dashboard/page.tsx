@@ -1,3 +1,4 @@
+import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { TransactionType } from '@prisma/client'
 
@@ -10,29 +11,41 @@ function formatRupiah(amount: number) {
 }
 
 export default async function DashboardPage() {
+  const currentUser = await getCurrentUser()
+  const entityId = currentUser.entityId
+
+  if (!entityId) {
+    return (
+      <div className="text-center py-12 text-gray-400">
+        <span className="text-4xl block mb-3">⚠️</span>
+        <p className="text-sm">Anda belum terdaftar di entity manapun</p>
+      </div>
+    )
+  }
+
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
   const [pemasukanBulanIni, pengeluaranBulanIni, totalPemasukanAll, totalPengeluaranAll, transaksiTerbaru] = await Promise.all([
     prisma.transaction.aggregate({
-      where: { entityId: 'dkm-default', type: TransactionType.INCOME, date: { gte: startOfMonth, lte: endOfMonth } },
+      where: { entityId, type: TransactionType.INCOME, date: { gte: startOfMonth, lte: endOfMonth } },
       _sum: { amount: true }
     }),
     prisma.transaction.aggregate({
-      where: { entityId: 'dkm-default', type: TransactionType.EXPENSE, date: { gte: startOfMonth, lte: endOfMonth } },
+      where: { entityId, type: TransactionType.EXPENSE, date: { gte: startOfMonth, lte: endOfMonth } },
       _sum: { amount: true }
     }),
     prisma.transaction.aggregate({
-      where: { entityId: 'dkm-default', type: TransactionType.INCOME },
+      where: { entityId, type: TransactionType.INCOME },
       _sum: { amount: true }
     }),
     prisma.transaction.aggregate({
-      where: { entityId: 'dkm-default', type: TransactionType.EXPENSE },
+      where: { entityId, type: TransactionType.EXPENSE },
       _sum: { amount: true }
     }),
     prisma.transaction.findMany({
-      where: { entityId: 'dkm-default' },
+      where: { entityId },
       include: { category: true },
       orderBy: { date: 'desc' },
       take: 5,

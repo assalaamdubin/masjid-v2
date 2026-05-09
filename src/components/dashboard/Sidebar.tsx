@@ -4,17 +4,19 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
-const menus = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/dashboard/transaksi', label: 'Transaksi', icon: '💰' },
-  { href: '/dashboard/kategori', label: 'Kategori', icon: '🏷️' },
-  { href: '/dashboard/laporan', label: 'Laporan', icon: '📋' },
-  { href: '/dashboard/admin/users', label: 'Manajemen User', icon: '👥' },
-  { href: '/dashboard/pengaturan', label: 'Pengaturan', icon: '⚙️' },
+const allMenus = [
+  { href: '/dashboard', label: 'Dashboard', icon: '📊', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN', 'VIEWER'] },
+  { href: '/dashboard/transaksi', label: 'Transaksi', icon: '💰', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN'] },
+  { href: '/dashboard/kategori', label: 'Kategori', icon: '🏷️', roles: ['SUPER_ADMIN', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN'] },
+  { href: '/dashboard/laporan', label: 'Laporan', icon: '📋', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN', 'VIEWER'] },
+  { href: '/dashboard/admin/users', label: 'Manajemen User', icon: '👥', roles: ['SUPER_ADMIN'] },
+  { href: '/dashboard/pengaturan', label: 'Pengaturan', icon: '⚙️', roles: ['SUPER_ADMIN'] },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ role }: { role: string | null }) {
   const pathname = usePathname()
+
+  const menus = allMenus.filter(m => role && m.roles.includes(role))
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col min-h-screen">
@@ -32,7 +34,7 @@ export default function Sidebar() {
 
       <nav className="flex-1 p-4 space-y-1">
         {menus.map((menu) => {
-          const isActive = pathname === menu.href || pathname.startsWith(menu.href + '/')
+          const isActive = pathname === menu.href || (menu.href !== '/dashboard' && pathname.startsWith(menu.href))
           return (
             <Link
               key={menu.href}

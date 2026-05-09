@@ -4,10 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { TransactionType } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 
-const DEFAULT_ENTITY_ID = 'dkm-default'
-const DEFAULT_PERSON_ID = 'admin-default'
-
-export async function createTransaksi(formData: FormData) {
+export async function createTransaksi(formData: FormData, entityId: string, personId: string) {
   const type = formData.get('type') as string
   const date = formData.get('date') as string
   const amount = formData.get('amount') as string
@@ -16,20 +13,9 @@ export async function createTransaksi(formData: FormData) {
   const payerName = formData.get('payerName') as string
   const paymentMethod = formData.get('paymentMethod') as string
 
-  // Pastikan person admin ada
-  await prisma.person.upsert({
-    where: { id: DEFAULT_PERSON_ID },
-    update: {},
-    create: {
-      id: DEFAULT_PERSON_ID,
-      fullName: 'Admin',
-      email: 'admin@masjid.com',
-    }
-  })
-
   await prisma.transaction.create({
     data: {
-      entityId: DEFAULT_ENTITY_ID,
+      entityId,
       type: type === 'INCOME' ? TransactionType.INCOME : TransactionType.EXPENSE,
       date: new Date(date),
       amount: parseFloat(amount),
@@ -37,7 +23,7 @@ export async function createTransaksi(formData: FormData) {
       description,
       payerName,
       paymentMethod,
-      createdById: DEFAULT_PERSON_ID,
+      createdById: personId,
     }
   })
 

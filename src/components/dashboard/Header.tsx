@@ -1,14 +1,41 @@
 import { logout } from '@/app/login/actions'
-import { User } from '@supabase/supabase-js'
 
-export default function Header({ user }: { user: User }) {
+type HeaderProps = {
+  fullName: string
+  email: string
+  entityName: string
+  mosqueName: string
+  role: string
+}
+
+const roleLabels: Record<string, string> = {
+  SUPER_ADMIN: '⭐ Super Admin',
+  KETUA: '👑 Ketua',
+  BENDAHARA_DKM: '💰 Bendahara DKM',
+  BENDAHARA_YAYASAN: '💰 Bendahara Yayasan',
+  VIEWER: '👁️ Viewer',
+}
+
+export default function Header({ fullName, email, entityName, mosqueName, role }: HeaderProps) {
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+    <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
       <div>
-        <h2 className="text-sm font-medium text-gray-900">
-          Selamat datang kembali! 👋
-        </h2>
-        <p className="text-xs text-gray-500">{user.email}</p>
+        <p className="text-sm font-semibold text-gray-900">{fullName}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-xs text-gray-500">{mosqueName}</span>
+          {entityName && (
+            <>
+              <span className="text-gray-300">•</span>
+              <span className="text-xs text-gray-500">{entityName}</span>
+            </>
+          )}
+          {role && (
+            <>
+              <span className="text-gray-300">•</span>
+              <span className="text-xs text-emerald-600 font-medium">{roleLabels[role] ?? role}</span>
+            </>
+          )}
+        </div>
       </div>
 
       <form action={logout}>

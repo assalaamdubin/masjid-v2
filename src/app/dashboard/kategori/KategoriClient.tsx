@@ -10,20 +10,25 @@ type Kategori = {
   isActive: boolean
 }
 
-export default function KategoriClient({ initialData }: { initialData: Kategori[] }) {
+export default function KategoriClient({
+  initialData,
+  entityId,
+}: {
+  initialData: Kategori[]
+  entityId: string
+}) {
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter] = useState('all')
 
-  const filtered = initialData.filter(k => 
+  const filtered = initialData.filter(k =>
     filter === 'all' ? true : k.type === filter
   )
 
-  const pemasukan = initialData.filter(k => k.type === 'income')
-  const pengeluaran = initialData.filter(k => k.type === 'expense')
+  const pemasukan = initialData.filter(k => k.type === 'INCOME')
+  const pengeluaran = initialData.filter(k => k.type === 'EXPENSE')
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Master Kategori</h1>
@@ -37,12 +42,11 @@ export default function KategoriClient({ initialData }: { initialData: Kategori[
         </button>
       </div>
 
-      {/* Form Tambah */}
       {showForm && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Tambah Kategori Baru</h3>
           <form action={async (formData) => {
-            await createKategori(formData)
+            await createKategori(formData, entityId)
             setShowForm(false)
           }} className="flex gap-3">
             <input
@@ -76,7 +80,6 @@ export default function KategoriClient({ initialData }: { initialData: Kategori[
         </div>
       )}
 
-      {/* Stats */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
           <p className="text-sm text-emerald-700 font-medium">Kategori Pemasukan</p>
@@ -88,9 +91,8 @@ export default function KategoriClient({ initialData }: { initialData: Kategori[
         </div>
       </div>
 
-      {/* Filter */}
       <div className="flex gap-2">
-        {['all', 'income', 'expense'].map(f => (
+        {['all', 'INCOME', 'EXPENSE'].map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -100,12 +102,11 @@ export default function KategoriClient({ initialData }: { initialData: Kategori[
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >
-            {f === 'all' ? 'Semua' : f === 'income' ? 'Pemasukan' : 'Pengeluaran'}
+            {f === 'all' ? 'Semua' : f === 'INCOME' ? 'Pemasukan' : 'Pengeluaran'}
           </button>
         ))}
       </div>
 
-      {/* List */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
@@ -128,11 +129,11 @@ export default function KategoriClient({ initialData }: { initialData: Kategori[
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{k.name}</td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      k.type === 'income'
+                      k.type === 'INCOME'
                         ? 'bg-emerald-100 text-emerald-700'
                         : 'bg-red-100 text-red-700'
                     }`}>
-                      {k.type === 'income' ? '📈 Pemasukan' : '📉 Pengeluaran'}
+                      {k.type === 'INCOME' ? '📈 Pemasukan' : '📉 Pengeluaran'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -147,18 +148,12 @@ export default function KategoriClient({ initialData }: { initialData: Kategori[
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <form action={toggleKategori.bind(null, k.id, k.isActive)}>
-                        <button
-                          type="submit"
-                          className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:bg-gray-50"
-                        >
+                        <button type="submit" className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:bg-gray-50">
                           {k.isActive ? 'Nonaktifkan' : 'Aktifkan'}
                         </button>
                       </form>
                       <form action={deleteKategori.bind(null, k.id)}>
-                        <button
-                          type="submit"
-                          className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50"
-                        >
+                        <button type="submit" className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50">
                           Hapus
                         </button>
                       </form>

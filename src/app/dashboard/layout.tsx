@@ -1,5 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { getCurrentUser } from '@/lib/auth'
 import Sidebar from '@/components/dashboard/Sidebar'
 import Header from '@/components/dashboard/Header'
 
@@ -8,16 +7,19 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
+  const currentUser = await getCurrentUser()
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar />
+      <Sidebar role={currentUser.role} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Header user={user} />
+        <Header
+          fullName={currentUser.person.fullName}
+          email={currentUser.person.email ?? ''}
+          entityName={currentUser.entityName ?? ''}
+          mosqueName={currentUser.mosqueName ?? ''}
+          role={currentUser.role ?? ''}
+        />
         <main className="flex-1 p-6 overflow-auto">
           {children}
         </main>

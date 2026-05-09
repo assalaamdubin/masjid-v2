@@ -30,18 +30,20 @@ function formatRupiah(amount: any) {
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+    day: 'numeric', month: 'long', year: 'numeric',
   }).format(new Date(date))
 }
 
 export default function TransaksiClient({
   initialData,
   kategori,
+  entityId,
+  personId,
 }: {
   initialData: Transaksi[]
   kategori: Kategori[]
+  entityId: string
+  personId: string
 }) {
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter] = useState('all')
@@ -60,12 +62,10 @@ export default function TransaksiClient({
     .reduce((sum, t) => sum + Number(t.amount), 0)
 
   const saldo = totalPemasukan - totalPengeluaran
-
   const kategoriFiltered = kategori.filter(k => k.type === formType)
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Transaksi</h1>
@@ -79,7 +79,6 @@ export default function TransaksiClient({
         </button>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-gray-200">
           <p className="text-xs font-medium text-gray-500 mb-1">Total Saldo</p>
@@ -97,17 +96,15 @@ export default function TransaksiClient({
         </div>
       </div>
 
-      {/* Form Tambah */}
       {showForm && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h3 className="font-semibold text-gray-900 mb-5">Tambah Transaksi Baru</h3>
           <form action={async (formData) => {
             formData.set('type', formType)
-            await createTransaksi(formData)
+            await createTransaksi(formData, entityId, personId)
             setShowForm(false)
           }} className="space-y-4">
 
-            {/* Tipe */}
             <div className="flex gap-3">
               <button
                 type="button"
@@ -134,7 +131,6 @@ export default function TransaksiClient({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Tanggal */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1.5">Tanggal</label>
                 <input
@@ -145,8 +141,6 @@ export default function TransaksiClient({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
-
-              {/* Nominal */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1.5">Nominal (Rp)</label>
                 <input
@@ -160,7 +154,6 @@ export default function TransaksiClient({
               </div>
             </div>
 
-            {/* Kategori */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">Kategori</label>
               <select
@@ -176,7 +169,6 @@ export default function TransaksiClient({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Nama Pemberi/Penerima */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   {formType === 'INCOME' ? 'Nama Pemberi' : 'Nama Penerima'}
@@ -188,8 +180,6 @@ export default function TransaksiClient({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
-
-              {/* Metode Pembayaran */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1.5">Metode</label>
                 <select
@@ -203,7 +193,6 @@ export default function TransaksiClient({
               </div>
             </div>
 
-            {/* Keterangan */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">Keterangan</label>
               <textarea
@@ -233,7 +222,6 @@ export default function TransaksiClient({
         </div>
       )}
 
-      {/* Filter */}
       <div className="flex gap-2">
         {[
           { value: 'all', label: 'Semua' },
@@ -254,7 +242,6 @@ export default function TransaksiClient({
         ))}
       </div>
 
-      {/* List Transaksi */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
@@ -288,12 +275,8 @@ export default function TransaksiClient({
                       {t.category.name}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {t.description || '-'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {t.paymentMethod || '-'}
-                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{t.description || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{t.paymentMethod || '-'}</td>
                   <td className="px-6 py-4 text-right">
                     <span className={`text-sm font-semibold ${
                       t.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'
