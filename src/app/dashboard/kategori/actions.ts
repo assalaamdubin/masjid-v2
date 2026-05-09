@@ -1,13 +1,16 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { TransactionType } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 
 export async function createKategori(formData: FormData) {
   const name = formData.get('name') as string
-  const type = formData.get('type') as string
+  const typeRaw = formData.get('type') as string
 
-  if (!name || !type) throw new Error('Data tidak lengkap')
+  if (!name || !typeRaw) throw new Error('Data tidak lengkap')
+
+  const type = typeRaw === 'income' ? TransactionType.income : TransactionType.expense
 
   await prisma.category.create({
     data: { name, type }
