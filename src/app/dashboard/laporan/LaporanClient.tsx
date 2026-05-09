@@ -26,6 +26,24 @@ const BULAN = [
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ]
 
+async function exportExcel(transaksi: Transaksi[], bulan: number, tahun: number) {
+  const XLSX = await import('xlsx')
+  const data = transaksi.map(t => ({
+    Tanggal: new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(t.date)),
+    Tipe: t.type === 'INCOME' ? 'Pemasukan' : 'Pengeluaran',
+    Kategori: t.category.name,
+    Keterangan: t.description ?? '-',
+    'Nama Pemberi/Penerima': t.payerName ?? '-',
+    Metode: t.paymentMethod ?? '-',
+    Nominal: Number(t.amount),
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Laporan')
+  XLSX.writeFile(wb, `Laporan-${BULAN[bulan - 1]}-${tahun}.xlsx`)
+}
+
 export default function LaporanClient({
   transaksi,
   totalPemasukan,
@@ -41,10 +59,8 @@ export default function LaporanClient({
 }) {
   const router = useRouter()
   const saldo = totalPemasukan - totalPengeluaran
-
   const tahunOptions = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i)
 
-  // Rekap per kategori
   const rekapKategori = transaksi.reduce((acc, t) => {
     const key = t.category.name
     if (!acc[key]) acc[key] = { name: key, type: t.type, total: 0, count: 0 }
@@ -55,24 +71,28 @@ export default function LaporanClient({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Laporan Keuangan</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {BULAN[bulan - 1]} {tahun}
-          </p>
+          <p className="text-sm text-gray-500 mt-0.5">{BULAN[bulan - 1]} {tahun}</p>
         </div>
-        <button
-          onClick={() => window.print()}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          🖨️ Print / Export PDF
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => exportExcel(transaksi, bulan, tahun)}
+            className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          >
+            📊 Export Excel
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          >
+            🖨️ Print PDF
+          </button>
+        </div>
       </div>
 
-      {/* Filter Bulan & Tahun */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-4 flex gap-4 items-center">
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 flex flex-wrap gap-4 items-center">
         <span className="text-sm font-medium text-gray-700">Filter:</span>
         <select
           value={bulan}
@@ -94,7 +114,6 @@ export default function LaporanClient({
         </select>
       </div>
 
-      {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100">
           <p className="text-xs font-medium text-emerald-600 mb-1">Total Pemasukan</p>
@@ -113,7 +132,6 @@ export default function LaporanClient({
         </div>
       </div>
 
-      {/* Rekap per Kategori */}
       {Object.keys(rekapKategori).length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
@@ -129,9 +147,7 @@ export default function LaporanClient({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {Object.values(rekapKategori)
-                .sort((a, b) => b.total - a.total)
-                .map((k) => (
+              {Object.values(rekapKategori).sort((a, b) => b.total - a.total).map((k) => (
                 <tr key={k.name} className="hover:bg-gray-50">
                   <td className="px-6 py-3 text-sm font-medium text-gray-900">{k.name}</td>
                   <td className="px-6 py-3">
@@ -154,7 +170,6 @@ export default function LaporanClient({
         </div>
       )}
 
-      {/* Detail Transaksi */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="font-semibold text-gray-900">Detail Transaksi</h3>
@@ -165,40 +180,42 @@ export default function LaporanClient({
             <p className="text-sm">Tidak ada transaksi di bulan ini</p>
           </div>
         ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Tanggal</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Kategori</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Keterangan</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Metode</th>
-                <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Nominal</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {transaksi.map((t) => (
-                <tr key={t.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-3 text-sm text-gray-600 whitespace-nowrap">
-                    {new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(new Date(t.date))}
-                  </td>
-                  <td className="px-6 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      t.type === 'INCOME' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {t.category.name}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-600">{t.description || '-'}</td>
-                  <td className="px-6 py-3 text-sm text-gray-500">{t.paymentMethod || '-'}</td>
-                  <td className={`px-6 py-3 text-right text-sm font-semibold ${
-                    t.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'
-                  }`}>
-                    {t.type === 'INCOME' ? '+' : '-'}{formatRupiah(Number(t.amount))}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Tanggal</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Kategori</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Keterangan</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Metode</th>
+                  <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Nominal</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {transaksi.map((t) => (
+                  <tr key={t.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-3 text-sm text-gray-600 whitespace-nowrap">
+                      {new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(new Date(t.date))}
+                    </td>
+                    <td className="px-6 py-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        t.type === 'INCOME' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {t.category.name}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-sm text-gray-600">{t.description || '-'}</td>
+                    <td className="px-6 py-3 text-sm text-gray-500">{t.paymentMethod || '-'}</td>
+                    <td className={`px-6 py-3 text-right text-sm font-semibold ${
+                      t.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'
+                    }`}>
+                      {t.type === 'INCOME' ? '+' : '-'}{formatRupiah(Number(t.amount))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
