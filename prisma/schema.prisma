@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==================== PERSONS ====================
+model Person {
+  id          String   @id @default(uuid())
+  fullName    String
+  phoneNumber String?
+  email       String?  @unique
+  address     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user           User?
+  entityMembers  EntityMember[]
+  transactions   Transaction[]
+
+  @@map("persons")
+}
+
+// ==================== USERS ====================
+model User {
+  id           String    @id @default(uuid())
+  personId     String    @unique
+  email        String    @unique
+  passwordHash String
+  lastLogin    DateTime?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  person       Person    @relation(fields: [personId], references: [id])
+
+  @@map("users")
+}
+
+// ==================== ENTITIES ====================
+model Entity {
+  id          String     @id @default(uuid())
+  name        String
+  type        EntityType
+  description String?
+  logoUrl     String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  members      EntityMember[]
+  categories   Category[]
+  transactions Transaction[]
+
+  @@map("entities")
+}
+
+enum EntityType {
+  YAYASAN
+  DKM
+}
+
+// ==================== ENTITY MEMBERS ====================
+model EntityMember {
+  id        String   @id @default(uuid())
+  personId  String
+  entityId  String
+  role      String
+  isActive  Boolean  @default(true)
+  joinedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  person    Person   @relation(fields: [personId], references: [id])
+  entity    Entity   @relation(fields: [entityId], references: [id])
+
+  @@unique([personId, entityId])
+  @@map("entity_members")
+}
+
+// ==================== CATEGORIES ====================
+model Category {
+  id          String          @id @default(uuid())
+  entityId    String
+  name        String
+  type        TransactionType
+  description String?
+  color       String?
+  icon        String?
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  entity       Entity        @relation(fields: [entityId], references: [id])
+  transactions Transaction[]
+
+  @@map("categories")
+}
+
+// ==================== TRANSACTIONS ====================
+model Transaction {
+  id             String          @id @default(uuid())
+  entityId       String
+  type           TransactionType
+  date           DateTime
+  amount         Decimal         @db.Decimal(15, 2)
+  categoryId     String
+  description    String?
+  payerName      String?
+  attachmentUrl  String?
+  paymentMethod  String?
+  approvalStatus ApprovalStatus  @default(DRAFT)
+  createdById    String
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  entity        Entity        @relation(fields: [entityId], references: [id])
+  category      Category      @relation(fields: [categoryId], references: [id])
+  createdBy     Person        @relation(fields: [createdById], references: [id])
+  approvalLogs  ApprovalLog[]
+
+  @@map("transactions")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum ApprovalStatus {
+  DRAFT
+  PENDING_BENDAHARA
+  PENDING_KETUA
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+// ==================== APPROVAL LOGS ====================
+model ApprovalLog {
+  id             String         @id @default(uuid())
+  transactionId  String
+  approverName   String
+  approvalRole   String
+  action         ApprovalAction
+  note           String?
+  createdAt      DateTime       @default(now())
+
+  transaction    Transaction    @relation(fields: [transactionId], references: [id])
+
+  @@map("approval_logs")
+}
+
+enum ApprovalAction {
+  APPROVE
+  REJECT
+  REVISE
+}
+
+// ==================== MOSQUE PROFILE ====================
+model MosqueProfile {
+  id            String   @id @default(uuid())
+  mosqueName    String
+  mosqueTagline String?
+  logoUrl       String?
+  address       String?
+  city          String?
+  province      String?
+  phone         String?
+  email         String?
+  website       String?
+  instagram     String?
+  youtube       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("mosque_profiles")
+}
