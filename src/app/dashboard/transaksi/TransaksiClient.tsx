@@ -7,6 +7,12 @@ type Kategori = {
   id: string
   name: string
   type: string
+  entity: { id: string; name: string }
+}
+
+type Entity = {
+  id: string
+  name: string
 }
 
 type Transaksi = {
@@ -17,7 +23,8 @@ type Transaksi = {
   description: string | null
   payerName: string | null
   paymentMethod: string | null
-  category: Kategori
+  category: { name: string; type: string }
+  entity: { name: string }
 }
 
 function formatRupiah(amount: any) {
@@ -39,15 +46,20 @@ export default function TransaksiClient({
   kategori,
   entityId,
   personId,
+  isAdmin,
+  entities,
 }: {
   initialData: Transaksi[]
   kategori: Kategori[]
   entityId: string
   personId: string
+  isAdmin: boolean
+  entities: Entity[]
 }) {
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter] = useState('all')
   const [formType, setFormType] = useState('INCOME')
+  const [selectedEntityId, setSelectedEntityId] = useState(entityId)
 
   const filtered = initialData.filter(t =>
     filter === 'all' ? true : t.type === filter
@@ -62,7 +74,10 @@ export default function TransaksiClient({
     .reduce((sum, t) => sum + Number(t.amount), 0)
 
   const saldo = totalPemasukan - totalPengeluaran
-  const kategoriFiltered = kategori.filter(k => k.type === formType)
+
+  const kategoriFiltered = kategori.filter(k =>
+    k.type === formType && k.entity.id === selectedEntityId
+  )
 
   return (
     <div className="space-y-6">
@@ -101,9 +116,25 @@ export default function TransaksiClient({
           <h3 className="font-semibold text-gray-900 mb-5">Tambah Transaksi Baru</h3>
           <form action={async (formData) => {
             formData.set('type', formType)
-            await createTransaksi(formData, entityId, personId)
+            await createTransaksi(formData, selectedEntityId, personId)
             setShowForm(false)
           }} className="space-y-4">
+
+            {/* Entity selector untuk Admin */}
+            {isAdmin && entities.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">Entity</label>
+                <select
+                  value={selectedEntityId}
+                  onChange={(e) => setSelectedEntityId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {entities.map(e => (
+                    <option key={e.id} value={e.id}>{e.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="flex gap-3">
               <button
@@ -254,6 +285,7 @@ export default function TransaksiClient({
               <tr>
                 <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Tanggal</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Kategori</th>
+                {isAdmin && <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Entity</th>}
                 <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Keterangan</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Metode</th>
                 <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Nominal</th>
@@ -275,6 +307,13 @@ export default function TransaksiClient({
                       {t.category.name}
                     </span>
                   </td>
+                  {isAdmin && (
+                    <td className="px-6 py-4">
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                        {t.entity.name}
+                      </span>
+                    </td>
+                  )}
                   <td className="px-6 py-4 text-sm text-gray-600">{t.description || '-'}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">{t.paymentMethod || '-'}</td>
                   <td className="px-6 py-4 text-right">

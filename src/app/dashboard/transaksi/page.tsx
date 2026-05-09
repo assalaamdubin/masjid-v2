@@ -4,9 +4,9 @@ import TransaksiClient from './TransaksiClient'
 
 export default async function TransaksiPage() {
   const currentUser = await getCurrentUser()
-  const entityId = currentUser.entityId
+  const { entityIds, entityId, isAdmin, person } = currentUser
 
-  if (!entityId) {
+  if (!entityIds.length) {
     return (
       <div className="text-center py-12 text-gray-400">
         <span className="text-4xl block mb-3">⚠️</span>
@@ -15,25 +15,34 @@ export default async function TransaksiPage() {
     )
   }
 
-  const [transaksi, kategori] = await Promise.all([
+  // Super Admin input transaksi ke entity pertama (DKM) by default
+  const activeEntityId = entityId ?? entityIds[0]
+
+  const [transaksi, kategori, entities] = await Promise.all([
     prisma.transaction.findMany({
-      where: { entityId },
-      include: { category: true, createdBy: true },
+      where: { entityId: { in: entityIds } },
+      include: { category: true, createdBy: true, entity: true },
       orderBy: { date: 'desc' },
       take: 50,
     }),
     prisma.category.findMany({
-      where: { entityId, isActive: true },
-      orderBy: [{ type: 'asc' }, { name: 'asc' }]
-    })
+      where: { entityId: { in: entityIds }, isActive: true },
+      orderBy: [{ type: 'asc' }, { name: 'asc' }],
+      include: { entity: true }
+    }),
+    isAdmin ? prisma.entity.findMany({
+      where: { id: { in: entityIds }, isActive: true }
+    }) : Promise.resolve([])
   ])
 
   return (
     <TransaksiClient
       initialData={transaksi}
       kategori={kategori}
-      entityId={entityId}
-      personId={currentUser.person.id}
+      entityId={activeEntityId}
+      personId={person.id}
+      isAdmin={isAdmin}
+      entities={entities}
     />
   )
 }

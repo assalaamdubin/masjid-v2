@@ -12,9 +12,9 @@ function formatRupiah(amount: number) {
 
 export default async function DashboardPage() {
   const currentUser = await getCurrentUser()
-  const entityId = currentUser.entityId
+  const entityIds = currentUser.entityIds
 
-  if (!entityId) {
+  if (!entityIds.length) {
     return (
       <div className="text-center py-12 text-gray-400">
         <span className="text-4xl block mb-3">⚠️</span>
@@ -29,24 +29,24 @@ export default async function DashboardPage() {
 
   const [pemasukanBulanIni, pengeluaranBulanIni, totalPemasukanAll, totalPengeluaranAll, transaksiTerbaru] = await Promise.all([
     prisma.transaction.aggregate({
-      where: { entityId, type: TransactionType.INCOME, date: { gte: startOfMonth, lte: endOfMonth } },
+      where: { entityId: { in: entityIds }, type: TransactionType.INCOME, date: { gte: startOfMonth, lte: endOfMonth } },
       _sum: { amount: true }
     }),
     prisma.transaction.aggregate({
-      where: { entityId, type: TransactionType.EXPENSE, date: { gte: startOfMonth, lte: endOfMonth } },
+      where: { entityId: { in: entityIds }, type: TransactionType.EXPENSE, date: { gte: startOfMonth, lte: endOfMonth } },
       _sum: { amount: true }
     }),
     prisma.transaction.aggregate({
-      where: { entityId, type: TransactionType.INCOME },
+      where: { entityId: { in: entityIds }, type: TransactionType.INCOME },
       _sum: { amount: true }
     }),
     prisma.transaction.aggregate({
-      where: { entityId, type: TransactionType.EXPENSE },
+      where: { entityId: { in: entityIds }, type: TransactionType.EXPENSE },
       _sum: { amount: true }
     }),
     prisma.transaction.findMany({
-      where: { entityId },
-      include: { category: true },
+      where: { entityId: { in: entityIds } },
+      include: { category: true, entity: true },
       orderBy: { date: 'desc' },
       take: 5,
     })
@@ -58,6 +58,12 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {currentUser.isAdmin && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-700">
+          📊 Menampilkan data gabungan semua entity dalam <strong>{currentUser.mosqueName}</strong>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-4">
@@ -117,9 +123,16 @@ export default async function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900">{t.category.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(t.date))}
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-xs text-gray-500">
+                        {new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(t.date))}
+                      </p>
+                      {currentUser.isAdmin && (
+                        <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+                          {t.entity.name}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <span className={`text-sm font-semibold ${
