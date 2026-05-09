@@ -10,20 +10,28 @@ datasource db {
 
 // ==================== PERSONS ====================
 model Person {
-  id          String   @id @default(uuid())
+  id          String        @id @default(uuid())
   fullName    String
   phoneNumber String?
-  email       String?  @unique
+  email       String?       @unique
   address     String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean       @default(true)
+  status      PersonStatus  @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  user           User?
-  entityMembers  EntityMember[]
-  transactions   Transaction[]
+  user          User?
+  entityMembers EntityMember[]
+  transactions  Transaction[]
 
   @@map("persons")
+}
+
+enum PersonStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  SUSPENDED
 }
 
 // ==================== USERS ====================
@@ -31,7 +39,8 @@ model User {
   id           String    @id @default(uuid())
   personId     String    @unique
   email        String    @unique
-  passwordHash String
+  passwordHash String?
+  supabaseId   String?   @unique
   lastLogin    DateTime?
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
@@ -42,9 +51,28 @@ model User {
   @@map("users")
 }
 
+// ==================== MOSQUE ====================
+model Mosque {
+  id          String   @id @default(uuid())
+  name        String
+  address     String?
+  city        String?
+  province    String?
+  phone       String?
+  email       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entities    Entity[]
+
+  @@map("mosques")
+}
+
 // ==================== ENTITIES ====================
 model Entity {
   id          String     @id @default(uuid())
+  mosqueId    String
   name        String
   type        EntityType
   description String?
@@ -53,6 +81,7 @@ model Entity {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
+  mosque       Mosque         @relation(fields: [mosqueId], references: [id])
   members      EntityMember[]
   categories   Category[]
   transactions Transaction[]
@@ -67,19 +96,27 @@ enum EntityType {
 
 // ==================== ENTITY MEMBERS ====================
 model EntityMember {
-  id        String   @id @default(uuid())
+  id        String      @id @default(uuid())
   personId  String
   entityId  String
-  role      String
-  isActive  Boolean  @default(true)
-  joinedAt  DateTime @default(now())
-  createdAt DateTime @default(now())
+  role      MemberRole
+  isActive  Boolean     @default(true)
+  joinedAt  DateTime    @default(now())
+  createdAt DateTime    @default(now())
 
-  person    Person   @relation(fields: [personId], references: [id])
-  entity    Entity   @relation(fields: [entityId], references: [id])
+  person    Person      @relation(fields: [personId], references: [id])
+  entity    Entity      @relation(fields: [entityId], references: [id])
 
   @@unique([personId, entityId])
   @@map("entity_members")
+}
+
+enum MemberRole {
+  SUPER_ADMIN
+  KETUA
+  BENDAHARA_DKM
+  BENDAHARA_YAYASAN
+  VIEWER
 }
 
 // ==================== CATEGORIES ====================

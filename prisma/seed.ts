@@ -1,17 +1,30 @@
-import { PrismaClient, EntityType, TransactionType } from '@prisma/client'
+import { PrismaClient, EntityType, TransactionType, MemberRole, PersonStatus } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 async function main() {
+  // Buat Mosque
+  const mosque = await prisma.mosque.upsert({
+    where: { id: 'mosque-default' },
+    update: {},
+    create: {
+      id: 'mosque-default',
+      name: 'Masjid Assalaam',
+      city: 'Jakarta',
+      province: 'DKI Jakarta',
+      isActive: true,
+    }
+  })
+
   // Buat Entity DKM
   const dkm = await prisma.entity.upsert({
     where: { id: 'dkm-default' },
     update: {},
     create: {
       id: 'dkm-default',
-      name: 'DKM Masjid',
+      mosqueId: mosque.id,
+      name: 'DKM Masjid Assalaam',
       type: EntityType.DKM,
-      description: 'Dewan Kemakmuran Masjid',
       isActive: true,
     }
   })
@@ -22,9 +35,34 @@ async function main() {
     update: {},
     create: {
       id: 'yayasan-default',
-      name: 'Yayasan Masjid',
+      mosqueId: mosque.id,
+      name: 'Yayasan Masjid Assalaam',
       type: EntityType.YAYASAN,
-      description: 'Yayasan Masjid',
+      isActive: true,
+    }
+  })
+
+  // Buat Super Admin Person
+  const adminPerson = await prisma.person.upsert({
+    where: { id: 'admin-default' },
+    update: {},
+    create: {
+      id: 'admin-default',
+      fullName: 'Super Admin',
+      email: 'admin@masjid.com',
+      isActive: true,
+      status: PersonStatus.ACTIVE,
+    }
+  })
+
+  // Buat Super Admin EntityMember
+  await prisma.entityMember.upsert({
+    where: { personId_entityId: { personId: 'admin-default', entityId: 'dkm-default' } },
+    update: {},
+    create: {
+      personId: adminPerson.id,
+      entityId: dkm.id,
+      role: MemberRole.SUPER_ADMIN,
       isActive: true,
     }
   })
@@ -67,9 +105,43 @@ async function main() {
     })
   }
 
+  // Seed kategori Yayasan - Pemasukan
+  const kategoriPemasukanYayasan = [
+    'Donasi Pendidikan', 'Wakaf', 'Bantuan Pemerintah', 'Unit Usaha', 'Lain-lain'
+  ]
+
+  for (const name of kategoriPemasukanYayasan) {
+    await prisma.category.upsert({
+      where: { id: `yayasan-income-${name}` },
+      update: {},
+      create: {
+        id: `yayasan-income-${name}`,
+        entityId: yayasan.id,
+        name,
+        type: TransactionType.INCOME,
+      }
+    })
+  }
+
+  // Seed kategori Yayasan - Pengeluaran
+  const kategoriPengeluaranYayasan = [
+    'Operasional Sekolah', 'Gaji Guru', 'Alat Tulis', 'Renovasi', 'Lain-lain'
+  ]
+
+  for (const name of kategoriPengeluaranYayasan) {
+    await prisma.category.upsert({
+      where: { id: `yayasan-expense-${name}` },
+      update: {},
+      create: {
+        id: `yayasan-expense-${name}`,
+        entityId: yayasan.id,
+        name,
+        type: TransactionType.EXPENSE,
+      }
+    })
+  }
+
   console.log('✅ Seed berhasil!')
-  console.log(`DKM: ${dkm.id}`)
-  console.log(`Yayasan: ${yayasan.id}`)
 }
 
 main()

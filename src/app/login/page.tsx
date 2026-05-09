@@ -10,7 +10,6 @@ export default async function LoginPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
-
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <span className="text-white text-2xl">🕌</span>
@@ -27,9 +26,7 @@ export default async function LoginPage({
 
         <form action={login} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Email
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
             <input
               name="email"
               type="email"
@@ -40,9 +37,7 @@ export default async function LoginPage({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Password
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
             <input
               name="password"
               type="password"
@@ -60,7 +55,14 @@ export default async function LoginPage({
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-400 mt-8">
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Belum punya akun?{' '}
+          <a href="/register" className="text-emerald-600 hover:text-emerald-700 font-medium">
+            Daftar di sini
+          </a>
+        </p>
+
+        <p className="text-center text-xs text-gray-400 mt-4">
           Aplikasi Bendahara Masjid © 2025
         </p>
       </div>

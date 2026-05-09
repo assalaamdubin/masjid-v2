@@ -9,6 +9,7 @@ const menus = [
   { href: '/dashboard/transaksi', label: 'Transaksi', icon: '💰' },
   { href: '/dashboard/kategori', label: 'Kategori', icon: '🏷️' },
   { href: '/dashboard/laporan', label: 'Laporan', icon: '📋' },
+  { href: '/dashboard/admin/users', label: 'Manajemen User', icon: '👥' },
   { href: '/dashboard/pengaturan', label: 'Pengaturan', icon: '⚙️' },
 ]
 
@@ -17,7 +18,6 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col min-h-screen">
-      {/* Logo */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center">
@@ -30,10 +30,9 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1">
         {menus.map((menu) => {
-          const isActive = pathname === menu.href
+          const isActive = pathname === menu.href || pathname.startsWith(menu.href + '/')
           return (
             <Link
               key={menu.href}
@@ -52,7 +51,6 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Footer */}
       <div className="p-4 border-t border-gray-200">
         <p className="text-xs text-gray-400 text-center">
           Aplikasi Bendahara Masjid © 2025
