@@ -6,12 +6,11 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>
 }) {
   const params = await searchParams
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
-        
-        {/* Logo & Header */}
+
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <span className="text-white text-2xl">🕌</span>
@@ -20,14 +19,12 @@ export default async function LoginPage({
           <p className="text-gray-500 text-sm mt-1">Sistem Keuangan Masjid Digital</p>
         </div>
 
-        {/* Error Message */}
         {params.error && (
           <div className="bg-red-50 text-red-600 text-sm rounded-lg p-3 mb-6">
             ⚠️ {params.error}
           </div>
         )}
 
-        {/* Form */}
         <form action={login} className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
