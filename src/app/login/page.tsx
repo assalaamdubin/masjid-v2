@@ -1,4 +1,5 @@
 import { login } from './actions'
+import Image from 'next/image'
 
 export default async function LoginPage({
   searchParams,
@@ -11,11 +12,18 @@ export default async function LoginPage({
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-2xl">🕌</span>
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/logo-masjid.png"
+              alt="Logo Masjid Al-Salam"
+              width={100}
+              height={100}
+              className="object-contain"
+            />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Masjid App</h1>
-          <p className="text-gray-500 text-sm mt-1">Sistem Keuangan Masjid Digital</p>
+          <h1 className="text-2xl font-bold text-gray-900">Masjid Al-Salam</h1>
+          <p className="text-emerald-700 text-sm font-medium">Kintamani Duta Bintaro</p>
+          <p className="text-gray-400 text-xs mt-1">Sistem Keuangan Digital</p>
         </div>
 
         {params.error && (
@@ -63,7 +71,7 @@ export default async function LoginPage({
         </p>
 
         <p className="text-center text-xs text-gray-400 mt-4">
-          Aplikasi Bendahara Masjid © 2025
+          © 2025 Masjid Al-Salam Kintamani Duta Bintaro
         </p>
       </div>
     </div>

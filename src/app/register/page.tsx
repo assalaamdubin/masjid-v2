@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import RegisterForm from './RegisterForm'
+import Image from 'next/image'
 
 export default async function RegisterPage() {
   const mosques = await prisma.mosque.findMany({
@@ -11,11 +12,18 @@ export default async function RegisterPage() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-lg p-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-2xl">🕌</span>
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/logo-masjid.png"
+              alt="Logo Masjid Al-Salam"
+              width={80}
+              height={80}
+              className="object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Daftar Akun</h1>
-          <p className="text-gray-500 text-sm mt-1">Isi data diri untuk mendaftar sebagai pengurus</p>
+          <p className="text-emerald-700 text-sm font-medium">Masjid Al-Salam Kintamani Duta Bintaro</p>
+          <p className="text-gray-400 text-xs mt-1">Isi data diri untuk mendaftar sebagai pengurus</p>
         </div>
 
         <RegisterForm mosques={mosques} />
