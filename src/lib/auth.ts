@@ -1,11 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
+import { cache } from 'react'
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) redirect('/login')
 
   const person = await prisma.person.findUnique({
@@ -15,7 +15,17 @@ export async function getCurrentUser() {
         where: { isActive: true },
         include: {
           entity: {
-            include: { mosque: true }
+            include: {
+              mosque: true,
+              // Ambil semua entity dalam masjid sekaligus
+              mosque: {
+                include: {
+                  entities: {
+                    where: { isActive: true }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -31,16 +41,14 @@ export async function getCurrentUser() {
   const primaryMember = person.entityMembers[0]
   const isAdmin = primaryMember?.role === 'SUPER_ADMIN'
 
-  // Kalau Super Admin, ambil semua entity dalam masjid yang sama
   let entityIds: string[] = []
   let mosqueId: string | null = null
 
   if (isAdmin && primaryMember) {
     mosqueId = primaryMember.entity.mosqueId
-    const allEntities = await prisma.entity.findMany({
-      where: { mosqueId, isActive: true }
-    })
-    entityIds = allEntities.map(e => e.id)
+    // Ambil dari data yang sudah di-include, tidak perlu query lagi!
+    const allEntities = primaryMember.entity.mosque.entities
+    entityIds = allEntities.map((e: any) => e.id)
   } else if (primaryMember) {
     entityIds = [primaryMember.entityId]
     mosqueId = primaryMember.entity.mosqueId
@@ -56,4 +64,4 @@ export async function getCurrentUser() {
     role: primaryMember?.role ?? null,
     isAdmin,
   }
-}
+})
