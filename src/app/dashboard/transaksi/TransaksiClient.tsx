@@ -4,6 +4,7 @@ import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { createTransaksi, deleteTransaksi, updateTransaksi, updateAttachment } from './actions'
+import { submitForApproval } from './approval/actions'
 
 const UploadBukti = dynamic(() => import('@/components/dashboard/UploadBukti'), { ssr: false })
 
@@ -25,6 +26,7 @@ type Transaksi = {
   payerName: string | null
   paymentMethod: string | null
   attachmentUrl: string | null
+  approvalStatus: string
   category: { id: string; name: string; type: string }
   entity: { name: string }
 }
@@ -410,6 +412,14 @@ export default function TransaksiClient({
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {t.type === 'EXPENSE' && t.approvalStatus === 'DRAFT' && (
+                          <form action={submitForApproval.bind(null, t.id)}>
+                            <button type="submit"
+                              className="text-xs text-yellow-600 hover:text-yellow-700 px-2 py-1 rounded border border-yellow-300 hover:bg-yellow-50">
+                              📤 Ajukan
+                            </button>
+                          </form>
+                        )}
                         <button onClick={() => startEdit(t)}
                           className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
                           ✏️ Edit
