@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation'
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
-  const email = formData.get('email') as string
+  const email = (formData.get('email') as string).toLowerCase().trim()
   const password = formData.get('password') as string
 
   const { data, error } = await supabase.auth.signInWithPassword({
