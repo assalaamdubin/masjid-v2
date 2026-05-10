@@ -6,7 +6,6 @@ export default async function ApprovalPage() {
   const currentUser = await getCurrentUser()
   const { person, entityIds } = currentUser
 
-  // Transaksi yang menunggu approval dari person ini
   const pendingTransaksi = await prisma.transaction.findMany({
     where: {
       entityId: { in: entityIds },
@@ -36,6 +35,7 @@ export default async function ApprovalPage() {
     include: {
       category: true,
       entity: true,
+      createdBy: true,
       approvalLogs: {
         include: { approver: true },
         orderBy: { createdAt: 'asc' }
