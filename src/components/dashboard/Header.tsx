@@ -1,4 +1,5 @@
 import { logout } from '@/app/login/actions'
+import NotificationBell from './NotificationBell'
 
 type HeaderProps = {
   fullName: string
@@ -6,6 +7,8 @@ type HeaderProps = {
   entityName: string
   mosqueName: string
   role: string
+  notifications: any[]
+  unreadCount: number
 }
 
 const roleLabels: Record<string, string> = {
@@ -16,7 +19,9 @@ const roleLabels: Record<string, string> = {
   VIEWER: '👁️ Viewer',
 }
 
-export default function Header({ fullName, email, entityName, mosqueName, role }: HeaderProps) {
+export default function Header({
+  fullName, email, entityName, mosqueName, role, notifications, unreadCount
+}: HeaderProps) {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
       <div>
@@ -38,15 +43,19 @@ export default function Header({ fullName, email, entityName, mosqueName, role }
         </div>
       </div>
 
-      <form action={logout}>
-        <button
-          type="submit"
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors px-3 py-2 rounded-lg hover:bg-red-50"
-        >
-          <span>🚪</span>
-          Keluar
-        </button>
-      </form>
+      <div className="flex items-center gap-2">
+        <NotificationBell notifications={notifications} unreadCount={unreadCount} />
+
+        <form action={logout}>
+          <button
+            type="submit"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors px-3 py-2 rounded-lg hover:bg-red-50"
+          >
+            <span>🚪</span>
+            Keluar
+          </button>
+        </form>
+      </div>
     </header>
   )
 }

@@ -8,21 +8,45 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ==================== PERSON TYPES ====================
+model PersonType {
+  id          String   @id @default(uuid())
+  name        String
+  entityId    String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entity      Entity   @relation(fields: [entityId], references: [id])
+  persons     Person[]
+
+  @@map("person_types")
+}
+
 // ==================== PERSONS ====================
 model Person {
-  id          String        @id @default(uuid())
-  fullName    String
-  phoneNumber String?
-  email       String?       @unique
-  address     String?
-  isActive    Boolean       @default(true)
-  status      PersonStatus  @default(PENDING)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id           String        @id @default(uuid())
+  fullName     String
+  phoneNumber  String?
+  email        String?       @unique
+  address      String?
+  photoUrl     String?
+  personTypeId String?
+  entityId     String?
+  reportToId   String?
+  isActive     Boolean       @default(true)
+  status       PersonStatus  @default(PENDING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
+  personType    PersonType?    @relation(fields: [personTypeId], references: [id])
+  entity        Entity?        @relation(fields: [entityId], references: [id])
+  reportTo      Person?        @relation("ReportTo", fields: [reportToId], references: [id])
+  subordinates  Person[]       @relation("ReportTo")
   user          User?
   entityMembers EntityMember[]
   transactions  Transaction[]
+  notifications Notification[]
 
   @@map("persons")
 }
@@ -85,6 +109,8 @@ model Entity {
   members      EntityMember[]
   categories   Category[]
   transactions Transaction[]
+  personTypes  PersonType[]
+  persons      Person[]
 
   @@map("entities")
 }
@@ -160,6 +186,7 @@ model Transaction {
   category      Category      @relation(fields: [categoryId], references: [id])
   createdBy     Person        @relation(fields: [createdById], references: [id])
   approvalLogs  ApprovalLog[]
+  notifications Notification[]
 
   @@map("transactions")
 }
@@ -197,6 +224,30 @@ enum ApprovalAction {
   APPROVE
   REJECT
   REVISE
+}
+
+// ==================== NOTIFICATIONS ====================
+model Notification {
+  id            String           @id @default(uuid())
+  personId      String
+  type          NotificationType
+  title         String
+  message       String
+  isRead        Boolean          @default(false)
+  transactionId String?
+  createdAt     DateTime         @default(now())
+
+  person        Person       @relation(fields: [personId], references: [id])
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  APPROVAL_REQUEST
+  APPROVAL_APPROVED
+  APPROVAL_REJECTED
+  INFO
 }
 
 // ==================== MOSQUE PROFILE ====================
