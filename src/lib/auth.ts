@@ -16,8 +16,6 @@ export const getCurrentUser = cache(async () => {
         include: {
           entity: {
             include: {
-              mosque: true,
-              // Ambil semua entity dalam masjid sekaligus
               mosque: {
                 include: {
                   entities: {
@@ -46,7 +44,6 @@ export const getCurrentUser = cache(async () => {
 
   if (isAdmin && primaryMember) {
     mosqueId = primaryMember.entity.mosqueId
-    // Ambil dari data yang sudah di-include, tidak perlu query lagi!
     const allEntities = primaryMember.entity.mosque.entities
     entityIds = allEntities.map((e: any) => e.id)
   } else if (primaryMember) {
