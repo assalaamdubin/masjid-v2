@@ -86,7 +86,7 @@ async function main() {
     create: {
       id: 'admin-default',
       fullName: 'Super Admin',
-      email: 'admin@masjid.com',
+      email: 'admin@assalaam-dubin.id',
       isActive: true,
       status: PersonStatus.ACTIVE,
       entityId: dkm.id,
