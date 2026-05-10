@@ -14,23 +14,34 @@ type Notification = {
 }
 
 export default function NotificationBell({
-  notifications,
-  unreadCount,
+  notifications: initialNotifications,
+  unreadCount: initialUnreadCount,
 }: {
   notifications: Notification[]
   unreadCount: number
 }) {
   const [open, setOpen] = useState(false)
+  const [notifications, setNotifications] = useState(initialNotifications)
+  const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
   const router = useRouter()
 
-  async function handleClick(notif: Notification) {
-    // Mark as read
-    await fetch('/api/notifications/read', {
-      method: 'POST',
-      body: JSON.stringify({ id: notif.id }),
-      headers: { 'Content-Type': 'application/json' }
-    })
+  // Saat bell diklik, langsung mark semua sebagai read
+  async function handleBellClick() {
+    const newOpen = !open
+    setOpen(newOpen)
 
+    if (newOpen && unreadCount > 0) {
+      // Optimistic update — langsung hilangkan angka
+      setUnreadCount(0)
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+
+      // Background update ke server
+      await fetch('/api/notifications/read-all', { method: 'POST' })
+      router.refresh()
+    }
+  }
+
+  async function handleClick(notif: Notification) {
     setOpen(false)
 
     if (notif.type === 'APPROVAL_REQUEST') {
@@ -38,14 +49,6 @@ export default function NotificationBell({
     } else if (notif.transactionId) {
       router.push('/dashboard/transaksi')
     }
-
-    router.refresh()
-  }
-
-  async function handleMarkAllRead() {
-    await fetch('/api/notifications/read-all', { method: 'POST' })
-    setOpen(false)
-    router.refresh()
   }
 
   function timeAgo(date: Date) {
@@ -60,7 +63,7 @@ export default function NotificationBell({
   return (
     <div className="relative">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={handleBellClick}
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
       >
         <span className="text-xl">🔔</span>
@@ -77,14 +80,7 @@ export default function NotificationBell({
           <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 z-40 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900 text-sm">Notifikasi</h3>
-              {unreadCount > 0 && (
-                <button
-                  onClick={handleMarkAllRead}
-                  className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
-                >
-                  Tandai semua dibaca
-                </button>
-              )}
+              <span className="text-xs text-gray-400">Semua sudah dibaca</span>
             </div>
 
             <div className="max-h-96 overflow-y-auto">
@@ -99,9 +95,7 @@ export default function NotificationBell({
                     <button
                       key={notif.id}
                       onClick={() => handleClick(notif)}
-                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
-                        !notif.isRead ? 'bg-emerald-50/50' : ''
-                      }`}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-lg mt-0.5">
@@ -114,9 +108,6 @@ export default function NotificationBell({
                           <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.message}</p>
                           <p className="text-xs text-gray-400 mt-1">{timeAgo(notif.createdAt)}</p>
                         </div>
-                        {!notif.isRead && (
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full mt-1 flex-shrink-0" />
-                        )}
                       </div>
                     </button>
                   ))}
