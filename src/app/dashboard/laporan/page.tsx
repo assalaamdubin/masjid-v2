@@ -24,22 +24,37 @@ export default async function LaporanPage({
   const now = new Date()
   const bulan = parseInt(params.bulan ?? String(now.getMonth() + 1))
   const tahun = parseInt(params.tahun ?? String(now.getFullYear()))
-
   const startDate = new Date(tahun, bulan - 1, 1)
   const endDate = new Date(tahun, bulan, 0, 23, 59, 59)
 
   const [transaksi, totalPemasukan, totalPengeluaran] = await Promise.all([
     prisma.transaction.findMany({
-      where: { entityId, date: { gte: startDate, lte: endDate } },
+      where: {
+        entityId,
+        date: { gte: startDate, lte: endDate },
+        OR: [
+          { type: 'INCOME' },
+          { type: 'EXPENSE', approvalStatus: 'APPROVED' }
+        ]
+      },
       include: { category: true },
       orderBy: { date: 'asc' }
     }),
     prisma.transaction.aggregate({
-      where: { entityId, type: TransactionType.INCOME, date: { gte: startDate, lte: endDate } },
+      where: {
+        entityId,
+        type: TransactionType.INCOME,
+        date: { gte: startDate, lte: endDate }
+      },
       _sum: { amount: true }
     }),
     prisma.transaction.aggregate({
-      where: { entityId, type: TransactionType.EXPENSE, date: { gte: startDate, lte: endDate } },
+      where: {
+        entityId,
+        type: TransactionType.EXPENSE,
+        approvalStatus: 'APPROVED',
+        date: { gte: startDate, lte: endDate }
+      },
       _sum: { amount: true }
     }),
   ])
