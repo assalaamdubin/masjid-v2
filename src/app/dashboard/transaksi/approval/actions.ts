@@ -37,10 +37,10 @@ export async function approveTransaction(transactionId: string, approverId: stri
     }
   })
 
-  // Cari chain approval
+  // Build chain
   const chain = await buildApprovalChain(transaction.createdById, transaction.entityId)
 
-  // Entity threshold check
+  // Threshold check
   const entity = await prisma.entity.findUnique({ where: { id: transaction.entityId } })
   const threshold = Number(entity?.approvalThreshold ?? 0)
   let approvalChain = chain
@@ -51,33 +51,40 @@ export async function approveTransaction(transactionId: string, approverId: stri
     approvalChain = bendahara ? [bendahara.personId] : chain
   }
 
-  // Cari posisi approver saat ini di chain
+  // Cari posisi approver saat ini
   const currentIndex = approvalChain.indexOf(approverId)
-  const nextApprover = approvalChain[currentIndex + 1]
+  
+  // Kalau tidak ketemu di chain, cari dari awal
+  const nextApprover = currentIndex >= 0 
+    ? approvalChain[currentIndex + 1]
+    : approvalChain[0] // fallback ke first approver
 
-  if (nextApprover) {
-    // Ada approver berikutnya
+  if (nextApprover && nextApprover !== approverId) {
+    // Ada approver berikutnya — update currentApproverId & kirim notif
     await prisma.transaction.update({
       where: { id: transactionId },
       data: { currentApproverId: nextApprover }
     })
+
+    // Kirim notif WA & in-app ke approver berikutnya
     await notifyNextApprover(transactionId, nextApprover, transaction.entityId)
   } else {
-    // Sudah mentok — APPROVED!
+    // Sudah mentok — FULLY APPROVED!
     await prisma.transaction.update({
       where: { id: transactionId },
       data: { approvalStatus: 'APPROVED', currentApproverId: null }
     })
 
-    // Notif ke pembuat transaksi
+    // Notif in-app ke pembuat transaksi
     await createNotification({
       personId: transaction.createdById,
       type: 'APPROVAL_APPROVED',
       title: '✅ Pengeluaran Disetujui',
-      message: `Pengeluaran ${transaction.category.name} sebesar ${formatRupiah(transaction.amount)} telah disetujui`,
+      message: `Pengeluaran ${transaction.category.name} sebesar ${formatRupiah(transaction.amount)} telah disetujui sepenuhnya`,
       transactionId,
     })
 
+    // Notif WA ke pembuat transaksi
     if (transaction.createdBy.phoneNumber) {
       await sendWhatsApp(
         transaction.createdBy.phoneNumber,
@@ -88,6 +95,18 @@ export async function approveTransaction(transactionId: string, approverId: stri
           entityName: transaction.entity.name,
         })
       )
+    }
+
+    // Notif WA ke semua approver sebelumnya (opsional - biar semua tahu)
+    for (const appId of approvalChain) {
+      if (appId === transaction.createdById) continue
+      const app = await prisma.person.findUnique({ where: { id: appId } })
+      if (app?.phoneNumber && appId !== approverId) {
+        await sendWhatsApp(
+          app.phoneNumber,
+          `✅ *Info: Pengeluaran Fully Approved*\n\nPengeluaran ${transaction.category.name} sebesar ${formatRupiah(transaction.amount)} dari ${transaction.entity.name} telah disetujui sepenuhnya.\n\n_Pesan otomatis Sistem Keuangan Masjid_`
+        )
+      }
     }
   }
 
@@ -122,15 +141,16 @@ export async function rejectTransaction(transactionId: string, approverId: strin
     }
   })
 
-  // Notif ke pembuat
+  // Notif in-app ke pembuat
   await createNotification({
     personId: transaction.createdById,
     type: 'APPROVAL_REJECTED',
     title: '❌ Pengeluaran Ditolak',
-    message: `Pengeluaran ${transaction.category.name} sebesar ${formatRupiah(transaction.amount)} ditolak. Alasan: ${note}`,
+    message: `Pengeluaran ${transaction.category.name} sebesar ${formatRupiah(transaction.amount)} ditolak oleh ${approver.fullName}. Alasan: ${note}`,
     transactionId,
   })
 
+  // Notif WA ke pembuat
   if (transaction.createdBy.phoneNumber) {
     await sendWhatsApp(
       transaction.createdBy.phoneNumber,
