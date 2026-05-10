@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { approveUser, rejectUser } from './actions'
+import { approveUser, rejectUser, deleteUser, updateUserStatus } from './actions'
 import { createRole, updateRole, deleteRole } from '../roles/actions'
 import UserRoleForm from './UserRoleForm'
 import LinkPersonForm from './LinkPersonForm'
@@ -20,6 +20,7 @@ type Person = {
   fullName: string
   email: string | null
   phoneNumber: string | null
+  status: string
   personType: { name: string } | null
   entity: Entity | null
   entityMembers: EntityMember[]
@@ -57,6 +58,7 @@ export default function UsersClient({
   const [tab, setTab] = useState<'pending' | 'users' | 'roles'>('pending')
   const [showRoleForm, setShowRoleForm] = useState(false)
   const [editingRole, setEditingRole] = useState<Role | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
   const allMembers = users.flatMap(u =>
     u.person.entityMembers.map(m => ({ user: u, member: m }))
@@ -156,7 +158,7 @@ export default function UsersClient({
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="font-semibold text-gray-900">User Accounts ({users.length})</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Link user ke data person & assign role</p>
+            <p className="text-xs text-gray-500 mt-0.5">Kelola user, role, dan status akun</p>
           </div>
           <div className="divide-y divide-gray-100">
             {users.map(user => {
@@ -164,15 +166,47 @@ export default function UsersClient({
               const userRoles = roles.filter(r => r.entityId === member?.entityId)
               return (
                 <div key={user.id} className="px-6 py-4 space-y-3">
+                  {/* Confirm delete */}
+                  {confirmDelete === user.personId && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                      <p className="text-sm font-medium text-red-700 mb-3">
+                        Yakin hapus user <strong>{user.person.fullName}</strong>? Tindakan ini tidak bisa dibatalkan!
+                      </p>
+                      <div className="flex gap-2">
+                        <form action={deleteUser.bind(null, user.personId)}>
+                          <button type="submit"
+                            className="bg-red-600 hover:bg-red-700 text-white text-xs font-medium px-4 py-2 rounded-lg">
+                            Ya, Hapus
+                          </button>
+                        </form>
+                        <button onClick={() => setConfirmDelete(null)}
+                          className="text-gray-500 text-xs px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                          Batal
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center font-bold text-emerald-700">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
+                        user.person.status === 'ACTIVE' ? 'bg-emerald-600' :
+                        user.person.status === 'SUSPENDED' ? 'bg-orange-500' : 'bg-gray-400'
+                      }`}>
                         {user.person.fullName.charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-900">{user.person.fullName}</p>
                         <p className="text-xs text-gray-500">{user.email}</p>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {/* Status badge */}
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            user.person.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
+                            user.person.status === 'SUSPENDED' ? 'bg-orange-100 text-orange-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {user.person.status}
+                          </span>
                           {member && (
                             <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
                               {member.entity.name}
@@ -188,20 +222,43 @@ export default function UsersClient({
                               {member.isBendahara ? '💰 ' : ''}{member.role.replace(/_/g, ' ')}
                             </span>
                           )}
-                          {user.person.personType && (
-                            <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
-                              {user.person.personType.name}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>
-                    <LinkPersonForm
-                      userId={user.id}
-                      currentPersonId={user.personId}
-                      persons={persons}
-                    />
+
+                    <div className="flex items-center gap-2">
+                      {/* Suspend/Activate */}
+                      {user.person.status === 'ACTIVE' ? (
+                        <form action={updateUserStatus.bind(null, user.personId, 'SUSPENDED' as any)}>
+                          <button type="submit"
+                            className="text-xs text-orange-500 hover:text-orange-700 px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-50">
+                            🔒 Suspend
+                          </button>
+                        </form>
+                      ) : (
+                        <form action={updateUserStatus.bind(null, user.personId, 'ACTIVE' as any)}>
+                          <button type="submit"
+                            className="text-xs text-emerald-600 hover:text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-50">
+                            🔓 Aktifkan
+                          </button>
+                        </form>
+                      )}
+
+                      {/* Delete */}
+                      <button
+                        onClick={() => setConfirmDelete(user.personId)}
+                        className="text-xs text-red-500 hover:text-red-700 px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50">
+                        🗑️ Hapus
+                      </button>
+
+                      <LinkPersonForm
+                        userId={user.id}
+                        currentPersonId={user.personId}
+                        persons={persons}
+                      />
+                    </div>
                   </div>
+
                   {member && (
                     <UserRoleForm
                       personId={user.personId}
@@ -224,17 +281,14 @@ export default function UsersClient({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700 flex-1 mr-4">
-              ℹ️ Role default tidak bisa dihapus. Tambah role custom sesuai kebutuhan organisasi.
+              ℹ️ Role default tidak bisa dihapus. Tambah role custom sesuai kebutuhan.
             </div>
-            <button
-              onClick={() => { setShowRoleForm(true); setEditingRole(null) }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap"
-            >
+            <button onClick={() => { setShowRoleForm(true); setEditingRole(null) }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap">
               + Role Baru
             </button>
           </div>
 
-          {/* Form tambah/edit role */}
           {showRoleForm && (
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <h3 className="font-semibold text-gray-900 mb-4">
@@ -269,7 +323,6 @@ export default function UsersClient({
             </div>
           )}
 
-          {/* List roles per entity */}
           {entities.map(entity => {
             const entityRoles = roles.filter(r => r.entityId === entity.id)
             return (
@@ -294,19 +347,14 @@ export default function UsersClient({
                         <td className="px-6 py-3 text-sm font-medium text-gray-900">{role.name}</td>
                         <td className="px-6 py-3 text-center">
                           {role.isDefault ? (
-                            <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
-                              Default
-                            </span>
+                            <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">Default</span>
                           ) : (
-                            <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full">
-                              Custom
-                            </span>
+                            <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full">Custom</span>
                           )}
                         </td>
                         <td className="px-6 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => { setEditingRole(role); setShowRoleForm(true) }}
+                            <button onClick={() => { setEditingRole(role); setShowRoleForm(true) }}
                               className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
                               ✏️ Edit
                             </button>
