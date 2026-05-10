@@ -13,6 +13,7 @@ model PersonType {
   id          String   @id @default(uuid())
   name        String
   entityId    String
+  isPengurus  Boolean  @default(false)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

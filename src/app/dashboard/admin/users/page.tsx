@@ -1,32 +1,44 @@
 import { prisma } from '@/lib/prisma'
 import { approveUser, rejectUser } from './actions'
+import LinkPersonForm from './LinkPersonForm'
 
 export default async function AdminUsersPage() {
-  const pendingUsers = await prisma.person.findMany({
-    where: { status: 'PENDING' },
-    include: {
-      entityMembers: {
-        include: { entity: { include: { mosque: true } } }
-      }
-    },
-    orderBy: { createdAt: 'desc' }
-  })
-
-  const activeUsers = await prisma.person.findMany({
-    where: { status: 'ACTIVE' },
-    include: {
-      entityMembers: {
-        include: { entity: { include: { mosque: true } } }
-      }
-    },
-    orderBy: { createdAt: 'desc' }
-  })
+  const [pendingUsers, users, persons] = await Promise.all([
+    prisma.person.findMany({
+      where: { status: 'PENDING' },
+      include: {
+        entityMembers: {
+          include: { entity: { include: { mosque: true } } }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.user.findMany({
+      include: {
+        person: {
+          include: {
+            personType: true,
+            entity: true,
+            entityMembers: {
+              include: { entity: { include: { mosque: true } } }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.person.findMany({
+      where: { isActive: true, status: 'ACTIVE' },
+      include: { personType: true, entity: true },
+      orderBy: { fullName: 'asc' }
+    })
+  ])
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-gray-900">Manajemen User</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Approve atau tolak pendaftaran user baru</p>
+        <p className="text-sm text-gray-500 mt-0.5">Kelola akun user dan link ke data person</p>
       </div>
 
       {/* Pending Users */}
@@ -59,13 +71,11 @@ export default async function AdminUsersPage() {
                       <div>
                         <p className="text-sm font-semibold text-gray-900">{person.fullName}</p>
                         <p className="text-xs text-gray-500">{person.email}</p>
-                        {person.phoneNumber && (
-                          <p className="text-xs text-gray-400">{person.phoneNumber}</p>
-                        )}
+                        {person.phoneNumber && <p className="text-xs text-gray-400">{person.phoneNumber}</p>}
                       </div>
                     </div>
                     {member && (
-                      <div className="mt-2 ml-13 flex gap-2 flex-wrap pl-13">
+                      <div className="mt-2 flex gap-2 flex-wrap ml-13 pl-13">
                         <span className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full">
                           🕌 {member.entity.mosque.name}
                         </span>
@@ -80,18 +90,14 @@ export default async function AdminUsersPage() {
                   </div>
                   <div className="flex gap-2 ml-4">
                     <form action={approveUser.bind(null, person.id)}>
-                      <button
-                        type="submit"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors"
-                      >
+                      <button type="submit"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors">
                         ✅ Approve
                       </button>
                     </form>
                     <form action={rejectUser.bind(null, person.id)}>
-                      <button
-                        type="submit"
-                        className="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium px-4 py-2 rounded-lg transition-colors border border-red-200"
-                      >
+                      <button type="submit"
+                        className="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium px-4 py-2 rounded-lg border border-red-200">
                         ❌ Tolak
                       </button>
                     </form>
@@ -103,48 +109,59 @@ export default async function AdminUsersPage() {
         )}
       </div>
 
-      {/* Active Users */}
+      {/* User Accounts */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="font-semibold text-gray-900">User Aktif ({activeUsers.length})</h3>
+          <h3 className="font-semibold text-gray-900">User Accounts ({users.length})</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Link user account ke data person</p>
         </div>
-        {activeUsers.length === 0 ? (
-          <div className="text-center py-10 text-gray-400">
-            <p className="text-sm">Belum ada user aktif</p>
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Nama</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Email</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Masjid</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Role</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {activeUsers.map((person) => {
-                const member = person.entityMembers[0]
-                return (
-                  <tr key={person.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-3 text-sm font-medium text-gray-900">{person.fullName}</td>
-                    <td className="px-6 py-3 text-sm text-gray-600">{person.email}</td>
-                    <td className="px-6 py-3 text-sm text-gray-600">
-                      {member?.entity.mosque.name ?? '-'}
-                    </td>
-                    <td className="px-6 py-3">
-                      {member && (
-                        <span className="bg-emerald-100 text-emerald-700 text-xs font-medium px-2 py-0.5 rounded-full">
-                          {member.role.replace('_', ' ')}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
+        <div className="divide-y divide-gray-100">
+          {users.map(user => {
+            const member = user.person.entityMembers[0]
+            const isLinked = user.person.personType !== null || user.person.entity !== null
+            return (
+              <div key={user.id} className="px-6 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${
+                      isLinked ? 'bg-emerald-600' : 'bg-gray-400'
+                    }`}>
+                      {user.person.fullName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{user.person.fullName}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {member && (
+                          <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full">
+                            {member.role.replace(/_/g, ' ')}
+                          </span>
+                        )}
+                        {user.person.personType && (
+                          <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
+                            {user.person.personType.name}
+                          </span>
+                        )}
+                        {user.person.entity && (
+                          <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
+                            {user.person.entity.name}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Link Person Form */}
+                  <LinkPersonForm
+                    userId={user.id}
+                    currentPersonId={user.personId}
+                    persons={persons}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

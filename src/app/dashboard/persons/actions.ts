@@ -62,9 +62,22 @@ export async function deletePerson(id: string) {
 export async function createPersonType(formData: FormData) {
   const name = formData.get('name') as string
   const entityId = formData.get('entityId') as string
+  const isPengurus = formData.get('isPengurus') === 'true'
 
   await prisma.personType.create({
-    data: { name, entityId, isActive: true }
+    data: { name, entityId, isPengurus, isActive: true }
+  })
+
+  revalidatePath('/dashboard/persons')
+}
+
+export async function updatePersonType(id: string, formData: FormData) {
+  const name = formData.get('name') as string
+  const isPengurus = formData.get('isPengurus') === 'true'
+
+  await prisma.personType.update({
+    where: { id },
+    data: { name, isPengurus }
   })
 
   revalidatePath('/dashboard/persons')
@@ -73,4 +86,29 @@ export async function createPersonType(formData: FormData) {
 export async function deletePersonType(id: string) {
   await prisma.personType.delete({ where: { id } })
   revalidatePath('/dashboard/persons')
+}
+
+export async function linkPersonToUser(userId: string, personId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { personId }
+  })
+  revalidatePath('/dashboard/admin/users')
+}
+
+export async function unlinkPersonFromUser(userId: string) {
+  const person = await prisma.person.create({
+    data: {
+      fullName: 'Unlinked User',
+      status: 'ACTIVE',
+      isActive: true,
+    }
+  })
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { personId: person.id }
+  })
+
+  revalidatePath('/dashboard/admin/users')
 }
