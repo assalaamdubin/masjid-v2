@@ -1,11 +1,12 @@
 import { prisma } from '@/lib/prisma'
-import { approveUser, rejectUser } from './actions'
-import UserRoleForm from './UserRoleForm'
-import LinkPersonForm from './LinkPersonForm'
+import { getCurrentUser } from '@/lib/auth'
 import UsersClient from './UsersClient'
 
 export default async function AdminUsersPage() {
-  const [pendingUsers, users, persons] = await Promise.all([
+  const currentUser = await getCurrentUser()
+  const { entityIds } = currentUser
+
+  const [pendingUsers, users, persons, roles, entities] = await Promise.all([
     prisma.person.findMany({
       where: { status: 'PENDING' },
       include: {
@@ -33,6 +34,13 @@ export default async function AdminUsersPage() {
       where: { isActive: true, status: 'ACTIVE' },
       include: { personType: true, entity: true },
       orderBy: { fullName: 'asc' }
+    }),
+    prisma.role.findMany({
+      where: { entityId: { in: entityIds }, isActive: true },
+      orderBy: [{ isDefault: 'desc' }, { name: 'asc' }]
+    }),
+    prisma.entity.findMany({
+      where: { id: { in: entityIds }, isActive: true }
     })
   ])
 
@@ -41,6 +49,8 @@ export default async function AdminUsersPage() {
       pendingUsers={pendingUsers}
       users={users}
       persons={persons}
+      roles={roles}
+      entities={entities}
     />
   )
 }

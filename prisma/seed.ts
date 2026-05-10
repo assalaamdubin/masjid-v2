@@ -142,6 +142,55 @@ async function main() {
     })
   }
 
+
+  // Seed default roles DKM
+  const defaultRolesDKM = [
+    { name: 'Ketua DKM', id: 'role-dkm-ketua' },
+    { name: 'Wakil Ketua DKM', id: 'role-dkm-wakil' },
+    { name: 'Sekretaris DKM', id: 'role-dkm-sekretaris' },
+    { name: 'Bendahara DKM', id: 'role-dkm-bendahara' },
+    { name: 'Ketua Bidang', id: 'role-dkm-kabid' },
+    { name: 'Anggota', id: 'role-dkm-anggota' },
+    { name: 'Marbot', id: 'role-dkm-marbot' },
+  ]
+
+  for (const role of defaultRolesDKM) {
+    await prisma.role.upsert({
+      where: { id: role.id },
+      update: {},
+      create: {
+        id: role.id,
+        name: role.name,
+        entityId: dkm.id,
+        isDefault: true,
+        isActive: true,
+      }
+    })
+  }
+
+  // Seed default roles Yayasan
+  const defaultRolesYayasan = [
+    { name: 'Ketua Yayasan', id: 'role-yayasan-ketua' },
+    { name: 'Sekretaris Yayasan', id: 'role-yayasan-sekretaris' },
+    { name: 'Bendahara Yayasan', id: 'role-yayasan-bendahara' },
+    { name: 'Kepala Sekolah', id: 'role-yayasan-kepsek' },
+    { name: 'Guru', id: 'role-yayasan-guru' },
+    { name: 'Staff', id: 'role-yayasan-staff' },
+  ]
+
+  for (const role of defaultRolesYayasan) {
+    await prisma.role.upsert({
+      where: { id: role.id },
+      update: {},
+      create: {
+        id: role.id,
+        name: role.name,
+        entityId: yayasan.id,
+        isDefault: true,
+        isActive: true,
+      }
+    })
+  }
   console.log('✅ Seed berhasil!')
 }
 

@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { updateUserRole } from './actions'
 
-const roles = [
+type Role = { id: string; name: string; isDefault: boolean }
+
+const memberRoles = [
   { value: 'SUPER_ADMIN', label: '⭐ Super Admin' },
   { value: 'KETUA', label: '👑 Ketua' },
   { value: 'BENDAHARA', label: '💰 Bendahara' },
@@ -15,21 +17,26 @@ export default function UserRoleForm({
   personId,
   entityId,
   currentRole,
+  currentRoleId,
   isBendahara,
+  roles,
 }: {
   personId: string
   entityId: string
   currentRole: string
+  currentRoleId: string | null
   isBendahara: boolean
+  roles: Role[]
 }) {
   const [editing, setEditing] = useState(false)
   const [role, setRole] = useState(currentRole)
+  const [roleId, setRoleId] = useState(currentRoleId ?? '')
   const [bendahara, setBendahara] = useState(isBendahara)
   const [saving, setSaving] = useState(false)
 
   async function handleSave() {
     setSaving(true)
-    await updateUserRole(personId, entityId, role as any, bendahara)
+    await updateUserRole(personId, entityId, role as any, isBendahara)
     setSaving(false)
     setEditing(false)
   }
@@ -45,11 +52,10 @@ export default function UserRoleForm({
 
   return (
     <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-3">
-      <p className="text-xs font-medium text-gray-700">Assign Role:</p>
+      <p className="text-xs font-medium text-gray-700">System Role (untuk akses fitur):</p>
       <div className="flex flex-wrap gap-2">
-        {roles.map(r => (
-          <button key={r.value} type="button"
-            onClick={() => setRole(r.value)}
+        {memberRoles.map(r => (
+          <button key={r.value} type="button" onClick={() => setRole(r.value)}
             className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
               role === r.value
                 ? 'bg-emerald-600 text-white border-emerald-600'
@@ -60,13 +66,22 @@ export default function UserRoleForm({
         ))}
       </div>
 
+      {roles.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-gray-700 mb-2">Jabatan di Organisasi (opsional):</p>
+          <select value={roleId} onChange={(e) => setRoleId(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="">Pilih jabatan...</option>
+            {roles.map(r => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={bendahara}
-          onChange={(e) => setBendahara(e.target.checked)}
-          className="w-4 h-4 text-emerald-600 rounded border-gray-300"
-        />
+        <input type="checkbox" checked={bendahara} onChange={(e) => setBendahara(e.target.checked)}
+          className="w-4 h-4 text-emerald-600 rounded border-gray-300" />
         <span className="text-xs text-gray-700">💰 Tandai sebagai <strong>Bendahara</strong> entity ini</span>
       </label>
 

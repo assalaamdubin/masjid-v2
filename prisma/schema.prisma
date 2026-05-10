@@ -8,6 +8,23 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ==================== ROLES ====================
+model Role {
+  id          String   @id @default(uuid())
+  name        String
+  entityId    String
+  isDefault   Boolean  @default(false)
+  permissions Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entity        Entity         @relation(fields: [entityId], references: [id])
+  entityMembers EntityMember[]
+
+  @@map("roles")
+}
+
 // ==================== PERSON TYPES ====================
 model PersonType {
   id          String   @id @default(uuid())
@@ -97,16 +114,16 @@ model Mosque {
 
 // ==================== ENTITIES ====================
 model Entity {
-  id                   String     @id @default(uuid())
-  mosqueId             String
-  name                 String
-  type                 EntityType
-  description          String?
-  logoUrl              String?
-  isActive             Boolean    @default(true)
-  approvalThreshold    Decimal?   @db.Decimal(15, 2)
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
+  id                String     @id @default(uuid())
+  mosqueId          String
+  name              String
+  type              EntityType
+  description       String?
+  logoUrl           String?
+  isActive          Boolean    @default(true)
+  approvalThreshold Decimal?   @db.Decimal(15, 2)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
   mosque       Mosque         @relation(fields: [mosqueId], references: [id])
   members      EntityMember[]
@@ -114,6 +131,7 @@ model Entity {
   transactions Transaction[]
   personTypes  PersonType[]
   persons      Person[]
+  roles        Role[]
 
   @@map("entities")
 }
@@ -125,17 +143,19 @@ enum EntityType {
 
 // ==================== ENTITY MEMBERS ====================
 model EntityMember {
-  id          String      @id @default(uuid())
+  id          String  @id @default(uuid())
   personId    String
   entityId    String
   role        MemberRole
-  isBendahara Boolean     @default(false)
-  isActive    Boolean     @default(true)
-  joinedAt    DateTime    @default(now())
-  createdAt   DateTime    @default(now())
+  roleId      String?
+  isBendahara Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  joinedAt    DateTime @default(now())
+  createdAt   DateTime @default(now())
 
-  person    Person      @relation(fields: [personId], references: [id])
-  entity    Entity      @relation(fields: [entityId], references: [id])
+  person    Person   @relation(fields: [personId], references: [id])
+  entity    Entity   @relation(fields: [entityId], references: [id])
+  roleRef   Role?    @relation(fields: [roleId], references: [id])
 
   @@unique([personId, entityId])
   @@map("entity_members")
@@ -170,22 +190,22 @@ model Category {
 
 // ==================== TRANSACTIONS ====================
 model Transaction {
-  id             String          @id @default(uuid())
-  entityId       String
-  type           TransactionType
-  date           DateTime
-  amount         Decimal         @db.Decimal(15, 2)
-  categoryId     String
-  description    String?
-  payerName      String?
-  attachmentUrl  String?
-  paymentMethod  String?
-  approvalStatus ApprovalStatus  @default(DRAFT)
+  id                String          @id @default(uuid())
+  entityId          String
+  type              TransactionType
+  date              DateTime
+  amount            Decimal         @db.Decimal(15, 2)
+  categoryId        String
+  description       String?
+  payerName         String?
+  attachmentUrl     String?
+  paymentMethod     String?
+  approvalStatus    ApprovalStatus  @default(DRAFT)
   currentApproverId String?
-  createdById    String
-  notes          String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdById       String
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   entity          Entity        @relation(fields: [entityId], references: [id])
   category        Category      @relation(fields: [categoryId], references: [id])
@@ -211,17 +231,17 @@ enum ApprovalStatus {
 
 // ==================== APPROVAL LOGS ====================
 model ApprovalLog {
-  id             String         @id @default(uuid())
-  transactionId  String
-  approverId     String?
-  approverName   String
-  approvalRole   String
-  action         ApprovalAction
-  note           String?
-  createdAt      DateTime       @default(now())
+  id            String         @id @default(uuid())
+  transactionId String
+  approverId    String?
+  approverName  String
+  approvalRole  String
+  action        ApprovalAction
+  note          String?
+  createdAt     DateTime       @default(now())
 
-  transaction    Transaction    @relation(fields: [transactionId], references: [id])
-  approver       Person?        @relation(fields: [approverId], references: [id])
+  transaction   Transaction    @relation(fields: [transactionId], references: [id])
+  approver      Person?        @relation(fields: [approverId], references: [id])
 
   @@map("approval_logs")
 }
