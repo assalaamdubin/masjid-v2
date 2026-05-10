@@ -1,7 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { createTransaksi, deleteTransaksi, updateTransaksi } from './actions'
+import dynamic from 'next/dynamic'
+import Image from 'next/image'
+import { createTransaksi, deleteTransaksi, updateTransaksi, updateAttachment } from './actions'
+
+const UploadBukti = dynamic(() => import('@/components/dashboard/UploadBukti'), { ssr: false })
 
 type Kategori = {
   id: string
@@ -10,10 +14,7 @@ type Kategori = {
   entity: { id: string; name: string }
 }
 
-type Entity = {
-  id: string
-  name: string
-}
+type Entity = { id: string; name: string }
 
 type Transaksi = {
   id: string
@@ -23,6 +24,7 @@ type Transaksi = {
   description: string | null
   payerName: string | null
   paymentMethod: string | null
+  attachmentUrl: string | null
   category: { id: string; name: string; type: string }
   entity: { name: string }
 }
@@ -39,10 +41,6 @@ function formatDate(date: Date) {
   return new Intl.DateTimeFormat('id-ID', {
     day: 'numeric', month: 'long', year: 'numeric',
   }).format(new Date(date))
-}
-
-function formatDateInput(date: Date) {
-  return new Date(date).toISOString().split('T')[0]
 }
 
 export default function TransaksiClient({
@@ -67,6 +65,9 @@ export default function TransaksiClient({
   const [selectedEntityId, setSelectedEntityId] = useState(entityId)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editData, setEditData] = useState<Transaksi | null>(null)
+  const [newAttachmentUrl, setNewAttachmentUrl] = useState('')
+  const [editAttachmentUrl, setEditAttachmentUrl] = useState('')
+  const [viewingImage, setViewingImage] = useState<string | null>(null)
 
   const filtered = initialData.filter(t => {
     const matchType = filter === 'all' ? true : t.type === filter
@@ -85,16 +86,42 @@ export default function TransaksiClient({
   function startEdit(t: Transaksi) {
     setEditingId(t.id)
     setEditData(t)
+    setEditAttachmentUrl(t.attachmentUrl ?? '')
     setShowForm(false)
   }
 
   function cancelEdit() {
     setEditingId(null)
     setEditData(null)
+    setEditAttachmentUrl('')
   }
 
   return (
     <div className="space-y-6">
+      {/* Image Viewer Modal */}
+      {viewingImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setViewingImage(null)}
+        >
+          <div className="relative max-w-2xl w-full max-h-[90vh]">
+            <Image
+              src={viewingImage}
+              alt="Bukti transaksi"
+              width={800}
+              height={600}
+              className="object-contain rounded-lg w-full h-auto"
+            />
+            <button
+              className="absolute top-2 right-2 bg-white text-gray-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold"
+              onClick={() => setViewingImage(null)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -131,20 +158,18 @@ export default function TransaksiClient({
           <h3 className="font-semibold text-gray-900 mb-5">Tambah Transaksi Baru</h3>
           <form action={async (formData) => {
             formData.set('type', formType)
+            formData.set('attachmentUrl', newAttachmentUrl)
             await createTransaksi(formData, selectedEntityId, personId)
             setShowForm(false)
+            setNewAttachmentUrl('')
           }} className="space-y-4">
+
             {isAdmin && entities.length > 0 && (
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1.5">Entity</label>
-                <select
-                  value={selectedEntityId}
-                  onChange={(e) => setSelectedEntityId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  {entities.map(e => (
-                    <option key={e.id} value={e.id}>{e.name}</option>
-                  ))}
+                <select value={selectedEntityId} onChange={(e) => setSelectedEntityId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  {entities.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
               </div>
             )}
@@ -207,6 +232,11 @@ export default function TransaksiClient({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
             </div>
 
+            <UploadBukti
+              transactionId={`temp-${Date.now()}`}
+              onUpload={(url) => setNewAttachmentUrl(url)}
+            />
+
             <div className="flex gap-3 pt-2">
               <button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
                 Simpan Transaksi
@@ -225,13 +255,14 @@ export default function TransaksiClient({
         <div className="bg-white rounded-2xl border border-emerald-200 p-6">
           <h3 className="font-semibold text-gray-900 mb-5">✏️ Edit Transaksi</h3>
           <form action={async (formData) => {
+            formData.set('attachmentUrl', editAttachmentUrl)
             await updateTransaksi(editingId, formData)
             cancelEdit()
           }} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1.5">Tanggal</label>
-                <input name="date" type="date" required defaultValue={formatDateInput(editData.date)}
+                <input name="date" type="date" required defaultValue={new Date(editData.date).toISOString().split('T')[0]}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
               </div>
               <div>
@@ -273,6 +304,12 @@ export default function TransaksiClient({
               <textarea name="description" rows={2} defaultValue={editData.description ?? ''}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
             </div>
+
+            <UploadBukti
+              transactionId={editingId}
+              existingUrl={editData.attachmentUrl}
+              onUpload={(url) => setEditAttachmentUrl(url)}
+            />
 
             <div className="flex gap-3 pt-2">
               <button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
@@ -329,6 +366,7 @@ export default function TransaksiClient({
                   {isAdmin && <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Entity</th>}
                   <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Keterangan</th>
                   <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Metode</th>
+                  <th className="text-center text-xs font-medium text-gray-500 px-6 py-3">Bukti</th>
                   <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Nominal</th>
                   <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Aksi</th>
                 </tr>
@@ -351,6 +389,19 @@ export default function TransaksiClient({
                     )}
                     <td className="px-6 py-4 text-sm text-gray-600">{t.description || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{t.paymentMethod || '-'}</td>
+                    <td className="px-6 py-4 text-center">
+                      {t.attachmentUrl ? (
+                        <button
+                          onClick={() => setViewingImage(t.attachmentUrl)}
+                          className="text-emerald-600 hover:text-emerald-700"
+                          title="Lihat bukti"
+                        >
+                          🖼️
+                        </button>
+                      ) : (
+                        <span className="text-gray-300 text-xs">-</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <span className={`text-sm font-semibold ${t.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'}`}>
                         {t.type === 'INCOME' ? '+' : '-'}{formatRupiah(t.amount)}
@@ -358,14 +409,13 @@ export default function TransaksiClient({
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => startEdit(t)}
-                          className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50"
-                        >
+                        <button onClick={() => startEdit(t)}
+                          className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
                           ✏️ Edit
                         </button>
                         <form action={deleteTransaksi.bind(null, t.id)}>
-                          <button type="submit" className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50">
+                          <button type="submit"
+                            className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50">
                             🗑️ Hapus
                           </button>
                         </form>

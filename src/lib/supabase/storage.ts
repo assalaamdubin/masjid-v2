@@ -1,19 +1,70 @@
 import { createClient } from '@/lib/supabase/client'
 
-export async function uploadBuktiTransaksi(file: File, transactionId: string) {
+export async function compressAndUpload(file: File, transactionId: string): Promise<string> {
+  // Kompresi gambar di browser sebelum upload
+  const compressed = await compressImage(file, 0.7, 1200)
+  
   const supabase = createClient()
-  const ext = file.name.split('.').pop()
+  const ext = 'jpg'
   const path = `bukti/${transactionId}.${ext}`
 
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from('transaksi')
-    .upload(path, file, { upsert: true })
+    .upload(path, compressed, { 
+      upsert: true,
+      contentType: 'image/jpeg'
+    })
 
   if (error) throw new Error(error.message)
 
-  const { data: urlData } = supabase.storage
+  const { data } = supabase.storage
     .from('transaksi')
     .getPublicUrl(path)
 
-  return urlData.publicUrl
+  return data.publicUrl
+}
+
+async function compressImage(file: File, quality: number, maxWidth: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image()
+    const url = URL.createObjectURL(file)
+    
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      
+      const canvas = document.createElement('canvas')
+      let { width, height } = img
+      
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width
+        width = maxWidth
+      }
+      
+      canvas.width = width
+      canvas.height = height
+      
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return reject(new Error('Canvas not supported'))
+      
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob)
+          else reject(new Error('Compression failed'))
+        },
+        'image/jpeg',
+        quality
+      )
+    }
+    
+    img.onerror = reject
+    img.src = url
+  })
+}
+
+export async function deleteBukti(transactionId: string) {
+  const supabase = createClient()
+  await supabase.storage
+    .from('transaksi')
+    .remove([`bukti/${transactionId}.jpg`])
 }

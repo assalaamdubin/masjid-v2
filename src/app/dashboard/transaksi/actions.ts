@@ -12,6 +12,7 @@ export async function createTransaksi(formData: FormData, entityId: string, pers
   const description = formData.get('description') as string
   const payerName = formData.get('payerName') as string
   const paymentMethod = formData.get('paymentMethod') as string
+  const attachmentUrl = formData.get('attachmentUrl') as string
 
   await prisma.transaction.create({
     data: {
@@ -23,6 +24,7 @@ export async function createTransaksi(formData: FormData, entityId: string, pers
       description,
       payerName,
       paymentMethod,
+      attachmentUrl: attachmentUrl || null,
       createdById: personId,
     }
   })
@@ -38,6 +40,7 @@ export async function updateTransaksi(id: string, formData: FormData) {
   const description = formData.get('description') as string
   const payerName = formData.get('payerName') as string
   const paymentMethod = formData.get('paymentMethod') as string
+  const attachmentUrl = formData.get('attachmentUrl') as string
 
   await prisma.transaction.update({
     where: { id },
@@ -48,6 +51,7 @@ export async function updateTransaksi(id: string, formData: FormData) {
       description,
       payerName,
       paymentMethod,
+      attachmentUrl: attachmentUrl || null,
     }
   })
 
@@ -59,4 +63,12 @@ export async function deleteTransaksi(id: string) {
   await prisma.transaction.delete({ where: { id } })
   revalidatePath('/dashboard/transaksi')
   revalidatePath('/dashboard')
+}
+
+export async function updateAttachment(id: string, attachmentUrl: string) {
+  await prisma.transaction.update({
+    where: { id },
+    data: { attachmentUrl }
+  })
+  revalidatePath('/dashboard/transaksi')
 }
