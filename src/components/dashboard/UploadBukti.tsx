@@ -5,11 +5,11 @@ import { compressAndUpload } from '@/lib/supabase/storage'
 import Image from 'next/image'
 
 export default function UploadBukti({
-  transactionId,
+  fileId,
   existingUrl,
   onUpload,
 }: {
-  transactionId: string
+  fileId: string
   existingUrl?: string | null
   onUpload: (url: string) => void
 }) {
@@ -31,7 +31,7 @@ export default function UploadBukti({
     setUploading(true)
 
     try {
-      const url = await compressAndUpload(file, transactionId)
+      const url = await compressAndUpload(file, fileId)
       setPreview(url)
       onUpload(url)
     } catch (err: any) {
@@ -53,6 +53,7 @@ export default function UploadBukti({
               alt="Bukti transaksi"
               fill
               className="object-contain bg-gray-50"
+              unoptimized
             />
           </div>
           <button

@@ -111,6 +111,7 @@ export default function TransaksiClient({
               width={800}
               height={600}
               className="object-contain rounded-lg w-full h-auto"
+              unoptimized
             />
             <button
               className="absolute top-2 right-2 bg-white text-gray-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold"
@@ -233,7 +234,7 @@ export default function TransaksiClient({
             </div>
 
             <UploadBukti
-              transactionId={`temp-${Date.now()}`}
+              fileId={`new-${Date.now()}`}
               onUpload={(url) => setNewAttachmentUrl(url)}
             />
 
@@ -306,7 +307,7 @@ export default function TransaksiClient({
             </div>
 
             <UploadBukti
-              transactionId={editingId}
+              fileId={editingId}
               existingUrl={editData.attachmentUrl}
               onUpload={(url) => setEditAttachmentUrl(url)}
             />

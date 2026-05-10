@@ -1,12 +1,10 @@
 import { createClient } from '@/lib/supabase/client'
 
-export async function compressAndUpload(file: File, transactionId: string): Promise<string> {
-  // Kompresi gambar di browser sebelum upload
+export async function compressAndUpload(file: File, fileName: string): Promise<string> {
   const compressed = await compressImage(file, 0.7, 1200)
   
   const supabase = createClient()
-  const ext = 'jpg'
-  const path = `bukti/${transactionId}.${ext}`
+  const path = `bukti/${fileName}.jpg`
 
   const { error } = await supabase.storage
     .from('transaksi')
@@ -31,7 +29,6 @@ async function compressImage(file: File, quality: number, maxWidth: number): Pro
     
     img.onload = () => {
       URL.revokeObjectURL(url)
-      
       const canvas = document.createElement('canvas')
       let { width, height } = img
       
@@ -62,9 +59,9 @@ async function compressImage(file: File, quality: number, maxWidth: number): Pro
   })
 }
 
-export async function deleteBukti(transactionId: string) {
+export async function deleteBukti(fileName: string) {
   const supabase = createClient()
   await supabase.storage
     .from('transaksi')
-    .remove([`bukti/${transactionId}.jpg`])
+    .remove([`bukti/${fileName}.jpg`])
 }
