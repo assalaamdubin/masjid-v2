@@ -8,10 +8,10 @@ import { cn } from '@/lib/utils'
 
 const allMenus = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN', 'VIEWER'] },
-  { href: '/dashboard/transaksi', label: 'Transaksi', icon: '💰', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN'] },
-  { href: '/dashboard/approval', label: 'Approval', icon: '✅', roles: ['SUPER_ADMIN', 'KETUA'] },
-  { href: '/dashboard/kategori', label: 'Kategori', icon: '🏷️', roles: ['SUPER_ADMIN', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN'] },
-  { href: '/dashboard/laporan', label: 'Laporan', icon: '📋', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN', 'VIEWER'] },
+  { href: '/dashboard/transaksi', label: 'Transaksi', icon: '💰', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA', 'PENGURUS', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN'] },
+  { href: '/dashboard/approval', label: 'Approval', icon: '✅', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA'] },
+  { href: '/dashboard/kategori', label: 'Kategori', icon: '🏷️', roles: ['SUPER_ADMIN', 'BENDAHARA', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN'] },
+  { href: '/dashboard/laporan', label: 'Laporan', icon: '📋', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA', 'PENGURUS', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN', 'VIEWER'] },
   { href: '/dashboard/persons', label: 'Data Person', icon: '👤', roles: ['SUPER_ADMIN', 'KETUA'] },
   { href: '/dashboard/admin/users', label: 'Manajemen User', icon: '👥', roles: ['SUPER_ADMIN'] },
   { href: '/dashboard/pengaturan', label: 'Pengaturan', icon: '⚙️', roles: ['SUPER_ADMIN'] },

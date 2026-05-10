@@ -9,7 +9,7 @@ export const getCurrentUser = cache(async () => {
   if (!user) redirect('/login')
 
   const person = await prisma.person.findUnique({
-    where: { email: user.email },
+    where: { email: user.email! },
     include: {
       entityMembers: {
         where: { isActive: true },
@@ -18,9 +18,7 @@ export const getCurrentUser = cache(async () => {
             include: {
               mosque: {
                 include: {
-                  entities: {
-                    where: { isActive: true }
-                  }
+                  entities: { where: { isActive: true } }
                 }
               }
             }
@@ -30,10 +28,23 @@ export const getCurrentUser = cache(async () => {
     }
   })
 
-  if (!person || person.status !== 'ACTIVE') {
+  if (!person) {
     const supabaseClient = await createClient()
     await supabaseClient.auth.signOut()
     redirect('/login')
+  }
+
+  // Kalau status PENDING, boleh akses tapi redirect ke halaman waiting
+  if (person.status === 'PENDING') {
+    const supabaseClient = await createClient()
+    await supabaseClient.auth.signOut()
+    redirect('/login?error=Akun%20Anda%20sedang%20menunggu%20persetujuan%20Admin')
+  }
+
+  if (person.status === 'REJECTED' || person.status === 'SUSPENDED') {
+    const supabaseClient = await createClient()
+    await supabaseClient.auth.signOut()
+    redirect('/login?error=Akun%20Anda%20tidak%20aktif%2C%20hubungi%20Admin')
   }
 
   const primaryMember = person.entityMembers[0]
