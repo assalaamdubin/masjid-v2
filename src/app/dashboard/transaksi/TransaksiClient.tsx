@@ -4,7 +4,6 @@ import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { createTransaksi, deleteTransaksi, updateTransaksi, updateAttachment } from './actions'
-import { submitForApproval } from './approval/actions'
 
 const UploadBukti = dynamic(() => import('@/components/dashboard/UploadBukti'), { ssr: false })
 
@@ -45,6 +44,30 @@ function formatDate(date: Date) {
   }).format(new Date(date))
 }
 
+function StatusBadge({ status, type }: { status: string; type: string }) {
+  if (type === 'INCOME') return null
+
+  const config: Record<string, { label: string; className: string }> = {
+    PENDING_KETUA: { label: '⏳ Waiting Approval', className: 'bg-yellow-100 text-yellow-700' },
+    APPROVED: { label: '✅ Approved', className: 'bg-emerald-100 text-emerald-700' },
+    REJECTED: { label: '❌ Rejected', className: 'bg-red-100 text-red-700' },
+    DRAFT: { label: '📝 Draft', className: 'bg-gray-100 text-gray-600' },
+  }
+
+  const s = config[status] ?? { label: status, className: 'bg-gray-100 text-gray-600' }
+
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${s.className}`}>
+      {s.label}
+    </span>
+  )
+}
+
+function canEdit(t: Transaksi) {
+  if (t.type === 'INCOME') return true
+  return t.approvalStatus === 'DRAFT' || t.approvalStatus === 'REJECTED'
+}
+
 export default function TransaksiClient({
   initialData,
   kategori,
@@ -81,7 +104,7 @@ export default function TransaksiClient({
   })
 
   const totalPemasukan = initialData.filter(t => t.type === 'INCOME').reduce((s, t) => s + Number(t.amount), 0)
-  const totalPengeluaran = initialData.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + Number(t.amount), 0)
+  const totalPengeluaran = initialData.filter(t => t.type === 'EXPENSE' && t.approvalStatus === 'APPROVED').reduce((s, t) => s + Number(t.amount), 0)
   const saldo = totalPemasukan - totalPengeluaran
   const kategoriFiltered = kategori.filter(k => k.type === formType && k.entity.id === selectedEntityId)
 
@@ -102,25 +125,13 @@ export default function TransaksiClient({
     <div className="space-y-6">
       {/* Image Viewer Modal */}
       {viewingImage && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-          onClick={() => setViewingImage(null)}
-        >
-          <div className="relative max-w-2xl w-full max-h-[90vh]">
-            <Image
-              src={viewingImage}
-              alt="Bukti transaksi"
-              width={800}
-              height={600}
-              className="object-contain rounded-lg w-full h-auto"
-              unoptimized
-            />
-            <button
-              className="absolute top-2 right-2 bg-white text-gray-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold"
-              onClick={() => setViewingImage(null)}
-            >
-              ✕
-            </button>
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setViewingImage(null)}>
+          <div className="relative max-w-2xl w-full">
+            <Image src={viewingImage} alt="Bukti transaksi" width={800} height={600}
+              className="object-contain rounded-lg w-full h-auto" unoptimized />
+            <button className="absolute top-2 right-2 bg-white text-gray-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold"
+              onClick={() => setViewingImage(null)}>✕</button>
           </div>
         </div>
       )}
@@ -131,12 +142,15 @@ export default function TransaksiClient({
           <h1 className="text-xl font-bold text-gray-900">Transaksi</h1>
           <p className="text-sm text-gray-500 mt-0.5">Kelola pemasukan dan pengeluaran</p>
         </div>
-        <button
-          onClick={() => { setShowForm(!showForm); cancelEdit() }}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
+        <button onClick={() => { setShowForm(!showForm); cancelEdit() }}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
           + Tambah Transaksi
         </button>
+      </div>
+
+      {/* Info approval */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 text-sm text-yellow-700">
+        💡 Pengeluaran otomatis dikirim ke Ketua untuk disetujui. Edit tidak bisa dilakukan saat status <strong>Waiting Approval</strong>.
       </div>
 
       {/* Summary Cards */}
@@ -144,6 +158,7 @@ export default function TransaksiClient({
         <div className="bg-white rounded-2xl p-5 border border-gray-200">
           <p className="text-xs font-medium text-gray-500 mb-1">Total Saldo</p>
           <p className={`text-xl font-bold ${saldo >= 0 ? 'text-gray-900' : 'text-red-600'}`}>{formatRupiah(saldo)}</p>
+          <p className="text-xs text-gray-400 mt-1">Hanya pengeluaran approved</p>
         </div>
         <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100">
           <p className="text-xs font-medium text-emerald-600 mb-1">Total Pemasukan</p>
@@ -152,6 +167,7 @@ export default function TransaksiClient({
         <div className="bg-red-50 rounded-2xl p-5 border border-red-100">
           <p className="text-xs font-medium text-red-600 mb-1">Total Pengeluaran</p>
           <p className="text-xl font-bold text-red-700">{formatRupiah(totalPengeluaran)}</p>
+          <p className="text-xs text-red-400 mt-1">Hanya yang approved</p>
         </div>
       </div>
 
@@ -159,6 +175,11 @@ export default function TransaksiClient({
       {showForm && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h3 className="font-semibold text-gray-900 mb-5">Tambah Transaksi Baru</h3>
+          {formType === 'EXPENSE' && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-xs text-yellow-700 mb-4">
+              ⚠️ Pengeluaran akan otomatis dikirim ke Ketua untuk approval via WhatsApp
+            </div>
+          )}
           <form action={async (formData) => {
             formData.set('type', formType)
             formData.set('attachmentUrl', newAttachmentUrl)
@@ -235,14 +256,14 @@ export default function TransaksiClient({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
             </div>
 
-            <UploadBukti
-              fileId={`new-${Date.now()}`}
-              onUpload={(url) => setNewAttachmentUrl(url)}
-            />
+            <UploadBukti fileId={`new-${Date.now()}`} onUpload={(url) => setNewAttachmentUrl(url)} />
 
             <div className="flex gap-3 pt-2">
-              <button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
-                Simpan Transaksi
+              <button type="submit"
+                className={`flex-1 text-white text-sm font-medium py-2.5 rounded-lg transition-colors ${
+                  formType === 'EXPENSE' ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}>
+                {formType === 'EXPENSE' ? '📤 Simpan & Ajukan Approval' : '💾 Simpan Transaksi'}
               </button>
               <button type="button" onClick={() => setShowForm(false)}
                 className="px-6 text-gray-500 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
@@ -308,11 +329,7 @@ export default function TransaksiClient({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
             </div>
 
-            <UploadBukti
-              fileId={editingId}
-              existingUrl={editData.attachmentUrl}
-              onUpload={(url) => setEditAttachmentUrl(url)}
-            />
+            <UploadBukti fileId={editingId} existingUrl={editData.attachmentUrl} onUpload={(url) => setEditAttachmentUrl(url)} />
 
             <div className="flex gap-3 pt-2">
               <button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
@@ -329,13 +346,9 @@ export default function TransaksiClient({
 
       {/* Search & Filter */}
       <div className="flex flex-wrap gap-3 items-center">
-        <input
-          type="text"
-          placeholder="🔍 Cari transaksi..."
-          value={search}
+        <input type="text" placeholder="🔍 Cari transaksi..." value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-48 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        />
+          className="flex-1 min-w-48 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
         <div className="flex gap-2">
           {[
             { value: 'all', label: 'Semua' },
@@ -368,7 +381,7 @@ export default function TransaksiClient({
                   <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Kategori</th>
                   {isAdmin && <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Entity</th>}
                   <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Keterangan</th>
-                  <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Metode</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Status</th>
                   <th className="text-center text-xs font-medium text-gray-500 px-6 py-3">Bukti</th>
                   <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Nominal</th>
                   <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Aksi</th>
@@ -391,14 +404,13 @@ export default function TransaksiClient({
                       </td>
                     )}
                     <td className="px-6 py-4 text-sm text-gray-600">{t.description || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{t.paymentMethod || '-'}</td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={t.approvalStatus} type={t.type} />
+                    </td>
                     <td className="px-6 py-4 text-center">
                       {t.attachmentUrl ? (
-                        <button
-                          onClick={() => setViewingImage(t.attachmentUrl)}
-                          className="text-emerald-600 hover:text-emerald-700"
-                          title="Lihat bukti"
-                        >
+                        <button onClick={() => setViewingImage(t.attachmentUrl)}
+                          className="text-emerald-600 hover:text-emerald-700" title="Lihat bukti">
                           🖼️
                         </button>
                       ) : (
@@ -412,24 +424,22 @@ export default function TransaksiClient({
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {t.type === 'EXPENSE' && t.approvalStatus === 'DRAFT' && (
-                          <form action={submitForApproval.bind(null, t.id)}>
+                        {canEdit(t) ? (
+                          <button onClick={() => startEdit(t)}
+                            className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
+                            ✏️ Edit
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400 px-2 py-1">🔒 Terkunci</span>
+                        )}
+                        {(t.approvalStatus === 'DRAFT' || t.approvalStatus === 'REJECTED' || t.type === 'INCOME') && (
+                          <form action={deleteTransaksi.bind(null, t.id)}>
                             <button type="submit"
-                              className="text-xs text-yellow-600 hover:text-yellow-700 px-2 py-1 rounded border border-yellow-300 hover:bg-yellow-50">
-                              📤 Ajukan
+                              className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50">
+                              🗑️ Hapus
                             </button>
                           </form>
                         )}
-                        <button onClick={() => startEdit(t)}
-                          className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
-                          ✏️ Edit
-                        </button>
-                        <form action={deleteTransaksi.bind(null, t.id)}>
-                          <button type="submit"
-                            className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50">
-                            🗑️ Hapus
-                          </button>
-                        </form>
                       </div>
                     </td>
                   </tr>

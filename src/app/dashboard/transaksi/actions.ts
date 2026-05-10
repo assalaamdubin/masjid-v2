@@ -1,8 +1,17 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { TransactionType } from '@prisma/client'
+import { TransactionType, ApprovalStatus } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
+import { sendWhatsApp, pesanPengajuanPengeluaran } from '@/lib/fonnte'
+
+function formatRupiah(amount: any) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+  }).format(Number(amount))
+}
 
 export async function createTransaksi(formData: FormData, entityId: string, personId: string) {
   const type = formData.get('type') as string
@@ -14,10 +23,12 @@ export async function createTransaksi(formData: FormData, entityId: string, pers
   const paymentMethod = formData.get('paymentMethod') as string
   const attachmentUrl = formData.get('attachmentUrl') as string
 
-  await prisma.transaction.create({
+  const isExpense = type === 'EXPENSE'
+
+  const transaction = await prisma.transaction.create({
     data: {
       entityId,
-      type: type === 'INCOME' ? TransactionType.INCOME : TransactionType.EXPENSE,
+      type: isExpense ? TransactionType.EXPENSE : TransactionType.INCOME,
       date: new Date(date),
       amount: parseFloat(amount),
       categoryId,
@@ -26,8 +37,44 @@ export async function createTransaksi(formData: FormData, entityId: string, pers
       paymentMethod,
       attachmentUrl: attachmentUrl || null,
       createdById: personId,
+      approvalStatus: isExpense ? ApprovalStatus.PENDING_KETUA : ApprovalStatus.APPROVED,
+    },
+    include: {
+      category: true,
+      entity: true,
+      createdBy: true,
     }
   })
+
+  // Auto kirim notif WA ke Ketua kalau pengeluaran
+  if (isExpense) {
+    const ketuaMembers = await prisma.entityMember.findMany({
+      where: {
+        entityId,
+        role: 'KETUA',
+        isActive: true,
+      },
+      include: { person: true }
+    })
+
+    const approvalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/approval`
+
+    for (const member of ketuaMembers) {
+      if (member.person.phoneNumber) {
+        await sendWhatsApp(
+          member.person.phoneNumber,
+          pesanPengajuanPengeluaran({
+            namaKategori: transaction.category.name,
+            nominal: formatRupiah(transaction.amount),
+            keterangan: transaction.description ?? '',
+            diajukanOleh: transaction.createdBy.fullName,
+            entityName: transaction.entity.name,
+            approvalUrl,
+          })
+        )
+      }
+    }
+  }
 
   revalidatePath('/dashboard/transaksi')
   revalidatePath('/dashboard')

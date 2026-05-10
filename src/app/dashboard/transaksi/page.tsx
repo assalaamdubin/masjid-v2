@@ -15,7 +15,6 @@ export default async function TransaksiPage() {
     )
   }
 
-  // Super Admin input transaksi ke entity pertama (DKM) by default
   const activeEntityId = entityId ?? entityIds[0]
 
   const [transaksi, kategori, entities] = await Promise.all([
