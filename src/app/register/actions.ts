@@ -19,8 +19,15 @@ export async function register(formData: FormData) {
   if (existing) throw new Error('Email sudah terdaftar')
 
   const supabase = await createClient()
-  const { data: authData, error: authError } = await supabase.auth.signUp({ email, password })
-  if (authError) throw new Error(authError.message)
+
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email,
+    password,
+  })
+
+  if (authError && !authError.message.includes('already registered')) {
+    throw new Error(authError.message)
+  }
 
   await supabase.auth.signOut()
 
@@ -39,11 +46,11 @@ export async function register(formData: FormData) {
     data: {
       personId: person.id,
       email,
-      supabaseId: authData.user?.id,
+      supabaseId: authData?.user?.id ?? null,
+      isActive: false,
     }
   })
 
-  // Buat EntityMember dengan role VIEWER dulu (admin bisa ganti nanti)
   await prisma.entityMember.create({
     data: {
       personId: person.id,
