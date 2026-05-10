@@ -6,7 +6,7 @@ import { PersonStatus } from '@prisma/client'
 
 export async function register(formData: FormData) {
   const fullName = formData.get('fullName') as string
-  const email = formData.get('email') as string
+  const email = (formData.get('email') as string).toLowerCase().trim()
   const password = formData.get('password') as string
   const phoneNumber = formData.get('phoneNumber') as string
   const entityId = formData.get('entityId') as string
