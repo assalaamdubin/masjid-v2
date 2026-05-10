@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { updateUserRole } from './actions'
 
 type Role = { id: string; name: string; isDefault: boolean }
@@ -33,20 +34,29 @@ export default function UserRoleForm({
   const [roleId, setRoleId] = useState(currentRoleId ?? '')
   const [bendahara, setBendahara] = useState(isBendahara)
   const [saving, setSaving] = useState(false)
+  const router = useRouter()
 
   async function handleSave() {
     setSaving(true)
-    await updateUserRole(personId, entityId, role as any, isBendahara)
+    await updateUserRole(personId, entityId, role as any, bendahara)
     setSaving(false)
     setEditing(false)
+    router.refresh()
   }
 
   if (!editing) {
     return (
-      <button onClick={() => setEditing(true)}
-        className="text-xs text-blue-500 hover:text-blue-700 px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-50">
-        🔧 Ubah Role
-      </button>
+      <div className="flex items-center gap-2">
+        {isBendahara && (
+          <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">
+            💰 Bendahara
+          </span>
+        )}
+        <button onClick={() => setEditing(true)}
+          className="text-xs text-blue-500 hover:text-blue-700 px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-50">
+          🔧 Ubah Role
+        </button>
+      </div>
     )
   }
 
