@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
-import { MemberRole, PersonStatus } from '@prisma/client'
+import { PersonStatus } from '@prisma/client'
 
 export async function register(formData: FormData) {
   const fullName = formData.get('fullName') as string
@@ -10,9 +10,8 @@ export async function register(formData: FormData) {
   const password = formData.get('password') as string
   const phoneNumber = formData.get('phoneNumber') as string
   const entityId = formData.get('entityId') as string
-  const role = formData.get('role') as MemberRole
 
-  if (!fullName || !email || !password || !entityId || !role) {
+  if (!fullName || !email || !password || !entityId) {
     throw new Error('Semua field wajib diisi')
   }
 
@@ -20,15 +19,9 @@ export async function register(formData: FormData) {
   if (existing) throw new Error('Email sudah terdaftar')
 
   const supabase = await createClient()
-
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-  })
-
+  const { data: authData, error: authError } = await supabase.auth.signUp({ email, password })
   if (authError) throw new Error(authError.message)
 
-  // Langsung sign out setelah register — tunggu approval dulu
   await supabase.auth.signOut()
 
   const person = await prisma.person.create({
@@ -36,6 +29,7 @@ export async function register(formData: FormData) {
       fullName,
       email,
       phoneNumber,
+      entityId,
       status: PersonStatus.PENDING,
       isActive: false,
     }
@@ -49,11 +43,12 @@ export async function register(formData: FormData) {
     }
   })
 
+  // Buat EntityMember dengan role VIEWER dulu (admin bisa ganti nanti)
   await prisma.entityMember.create({
     data: {
       personId: person.id,
       entityId,
-      role,
+      role: 'VIEWER',
       isActive: false,
     }
   })

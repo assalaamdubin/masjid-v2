@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { PersonStatus } from '@prisma/client'
+import { PersonStatus, MemberRole } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 
 export async function approveUser(personId: string) {
@@ -24,5 +24,22 @@ export async function rejectUser(personId: string) {
     data: { status: PersonStatus.REJECTED, isActive: false }
   })
 
+  revalidatePath('/dashboard/admin/users')
+}
+
+export async function updateUserRole(personId: string, entityId: string, role: MemberRole, isBendahara: boolean) {
+  await prisma.entityMember.updateMany({
+    where: { personId, entityId },
+    data: { role, isBendahara }
+  })
+
+  revalidatePath('/dashboard/admin/users')
+}
+
+export async function linkPersonToUser(userId: string, personId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { personId }
+  })
   revalidatePath('/dashboard/admin/users')
 }

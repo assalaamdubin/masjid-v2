@@ -48,6 +48,7 @@ model Person {
   entityMembers EntityMember[]
   transactions  Transaction[]
   notifications Notification[]
+  approvalLogs  ApprovalLog[]
 
   @@map("persons")
 }
@@ -96,15 +97,16 @@ model Mosque {
 
 // ==================== ENTITIES ====================
 model Entity {
-  id          String     @id @default(uuid())
-  mosqueId    String
-  name        String
-  type        EntityType
-  description String?
-  logoUrl     String?
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id                   String     @id @default(uuid())
+  mosqueId             String
+  name                 String
+  type                 EntityType
+  description          String?
+  logoUrl              String?
+  isActive             Boolean    @default(true)
+  approvalThreshold    Decimal?   @db.Decimal(15, 2)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
 
   mosque       Mosque         @relation(fields: [mosqueId], references: [id])
   members      EntityMember[]
@@ -123,13 +125,14 @@ enum EntityType {
 
 // ==================== ENTITY MEMBERS ====================
 model EntityMember {
-  id        String      @id @default(uuid())
-  personId  String
-  entityId  String
-  role      MemberRole
-  isActive  Boolean     @default(true)
-  joinedAt  DateTime    @default(now())
-  createdAt DateTime    @default(now())
+  id          String      @id @default(uuid())
+  personId    String
+  entityId    String
+  role        MemberRole
+  isBendahara Boolean     @default(false)
+  isActive    Boolean     @default(true)
+  joinedAt    DateTime    @default(now())
+  createdAt   DateTime    @default(now())
 
   person    Person      @relation(fields: [personId], references: [id])
   entity    Entity      @relation(fields: [entityId], references: [id])
@@ -141,8 +144,8 @@ model EntityMember {
 enum MemberRole {
   SUPER_ADMIN
   KETUA
-  BENDAHARA_DKM
-  BENDAHARA_YAYASAN
+  BENDAHARA
+  PENGURUS
   VIEWER
 }
 
@@ -178,16 +181,17 @@ model Transaction {
   attachmentUrl  String?
   paymentMethod  String?
   approvalStatus ApprovalStatus  @default(DRAFT)
+  currentApproverId String?
   createdById    String
   notes          String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
-  entity        Entity        @relation(fields: [entityId], references: [id])
-  category      Category      @relation(fields: [categoryId], references: [id])
-  createdBy     Person        @relation(fields: [createdById], references: [id])
-  approvalLogs  ApprovalLog[]
-  notifications Notification[]
+  entity          Entity        @relation(fields: [entityId], references: [id])
+  category        Category      @relation(fields: [categoryId], references: [id])
+  createdBy       Person        @relation(fields: [createdById], references: [id])
+  approvalLogs    ApprovalLog[]
+  notifications   Notification[]
 
   @@map("transactions")
 }
@@ -199,8 +203,7 @@ enum TransactionType {
 
 enum ApprovalStatus {
   DRAFT
-  PENDING_BENDAHARA
-  PENDING_KETUA
+  PENDING_APPROVAL
   APPROVED
   REJECTED
   CANCELLED
@@ -210,6 +213,7 @@ enum ApprovalStatus {
 model ApprovalLog {
   id             String         @id @default(uuid())
   transactionId  String
+  approverId     String?
   approverName   String
   approvalRole   String
   action         ApprovalAction
@@ -217,6 +221,7 @@ model ApprovalLog {
   createdAt      DateTime       @default(now())
 
   transaction    Transaction    @relation(fields: [transactionId], references: [id])
+  approver       Person?        @relation(fields: [approverId], references: [id])
 
   @@map("approval_logs")
 }

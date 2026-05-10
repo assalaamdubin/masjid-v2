@@ -1,18 +1,9 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { TransactionType, ApprovalStatus, NotificationType } from '@prisma/client'
+import { TransactionType } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
-import { sendWhatsApp, pesanPengajuanPengeluaran } from '@/lib/fonnte'
-import { createNotification } from '@/lib/notifications'
-
-function formatRupiah(amount: any) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(Number(amount))
-}
+import { submitTransactionForApproval } from '@/lib/approval'
 
 export async function createTransaksi(formData: FormData, entityId: string, personId: string) {
   const type = formData.get('type') as string
@@ -37,44 +28,17 @@ export async function createTransaksi(formData: FormData, entityId: string, pers
       paymentMethod,
       attachmentUrl: attachmentUrl || null,
       createdById: personId,
-      approvalStatus: isExpense ? ApprovalStatus.PENDING_KETUA : ApprovalStatus.APPROVED,
-    },
-    include: { category: true, entity: true, createdBy: true }
+      approvalStatus: isExpense ? 'PENDING_APPROVAL' : 'APPROVED',
+    }
   })
 
   if (isExpense) {
-    const ketuaMembers = await prisma.entityMember.findMany({
-      where: { entityId, role: 'KETUA', isActive: true },
-      include: { person: true }
-    })
-
-    const approvalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/approval`
-
-    for (const member of ketuaMembers) {
-      // Notifikasi in-app ke Ketua
-      await createNotification({
-        personId: member.personId,
-        type: NotificationType.APPROVAL_REQUEST,
-        title: '📤 Pengajuan Pengeluaran Baru',
-        message: `${transaction.createdBy.fullName} mengajukan pengeluaran ${transaction.category.name} sebesar ${formatRupiah(transaction.amount)}`,
-        transactionId: transaction.id,
-      })
-
-      // Notif WA ke Ketua
-      if (member.person.phoneNumber) {
-        await sendWhatsApp(
-          member.person.phoneNumber,
-          pesanPengajuanPengeluaran({
-            namaKategori: transaction.category.name,
-            nominal: formatRupiah(transaction.amount),
-            keterangan: transaction.description ?? '',
-            diajukanOleh: transaction.createdBy.fullName,
-            entityName: transaction.entity.name,
-            approvalUrl,
-          })
-        )
-      }
-    }
+    await submitTransactionForApproval(
+      transaction.id,
+      personId,
+      entityId,
+      parseFloat(amount)
+    )
   }
 
   revalidatePath('/dashboard/transaksi')

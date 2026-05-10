@@ -18,3 +18,12 @@ export async function updateMosque(formData: FormData, mosqueId: string) {
 
   revalidatePath('/dashboard/pengaturan')
 }
+
+export async function updateEntityThreshold(entityId: string, threshold: number) {
+  await prisma.entity.update({
+    where: { id: entityId },
+    data: { approvalThreshold: threshold }
+  })
+
+  revalidatePath('/dashboard/pengaturan')
+}
