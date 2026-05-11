@@ -56,9 +56,14 @@ export async function updatePerson(id: string, formData: FormData) {
 
 // Soft delete — nonaktifkan person
 export async function deletePerson(id: string) {
+  const current = await prisma.person.findUnique({ where: { id } })
+  const newIsActive = !current?.isActive
   await prisma.person.update({
     where: { id },
-    data: { isActive: false, status: 'SUSPENDED' }
+    data: { 
+      isActive: newIsActive,
+      status: newIsActive ? 'ACTIVE' : 'SUSPENDED'
+    }
   })
   revalidatePath('/dashboard/persons')
 }
