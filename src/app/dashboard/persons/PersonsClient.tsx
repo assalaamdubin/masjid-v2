@@ -39,13 +39,18 @@ export default function PersonsClient({
   const [editingPerson, setEditingPerson] = useState<Person | null>(null)
   const [editingType, setEditingType] = useState<PersonType | null>(null)
   const [search, setSearch] = useState('')
+  const [showInactive, setShowInactive] = useState(false)
+  const [confirmNonaktif, setConfirmNonaktif] = useState<string | null>(null)
+  const [confirmNonaktifType, setConfirmNonaktifType] = useState<string | null>(null)
 
-  const filtered = persons.filter(p =>
-    p.isActive &&
-    (p.fullName.toLowerCase().includes(search.toLowerCase()) ||
-    (p.email?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-    (p.personType?.name.toLowerCase().includes(search.toLowerCase()) ?? false))
-  )
+  const filtered = persons.filter(p => {
+    const matchActive = showInactive ? true : p.isActive
+    const matchSearch = search === '' ? true :
+      p.fullName.toLowerCase().includes(search.toLowerCase()) ||
+      (p.email?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
+      (p.personType?.name.toLowerCase().includes(search.toLowerCase()) ?? false)
+    return matchActive && matchSearch
+  })
 
   const roots = persons.filter(p => !p.reportToId && p.isActive)
 
@@ -229,7 +234,7 @@ export default function PersonsClient({
             <div className="flex items-center gap-3">
               <input type="checkbox" id="isPengurus" name="isPengurus" value="true"
                 defaultChecked={editingType?.isPengurus}
-                className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" />
+                className="w-4 h-4 text-emerald-600 rounded border-gray-300" />
               <label htmlFor="isPengurus" className="text-sm text-gray-700">
                 ⭐ Tandai sebagai <strong>Pengurus</strong>
               </label>
@@ -251,9 +256,17 @@ export default function PersonsClient({
       {/* Tab: Daftar Person */}
       {tab === 'persons' && (
         <div className="space-y-4">
-          <input type="text" placeholder="🔍 Cari person..." value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          <div className="flex items-center gap-3">
+            <input type="text" placeholder="🔍 Cari person..." value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer whitespace-nowrap">
+              <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 rounded border-gray-300" />
+              Tampilkan nonaktif
+            </label>
+          </div>
+
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
             {filtered.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
@@ -275,13 +288,18 @@ export default function PersonsClient({
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filtered.map(p => (
-                    <tr key={p.id} className="hover:bg-gray-50">
+                    <tr key={p.id} className={`hover:bg-gray-50 ${!p.isActive ? 'opacity-50 bg-gray-50' : ''}`}>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-sm font-bold text-emerald-700">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${
+                            p.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'
+                          }`}>
                             {p.fullName.charAt(0).toUpperCase()}
                           </div>
-                          <p className="text-sm font-medium text-gray-900">{p.fullName}</p>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{p.fullName}</p>
+                            {!p.isActive && <span className="text-xs text-orange-500">⛔ Nonaktif</span>}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -309,17 +327,32 @@ export default function PersonsClient({
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
+                        {/* Konfirmasi nonaktif */}
+                        {confirmNonaktif === p.id && (
+                          <div className="flex items-center justify-end gap-2 mb-2">
+                            <span className="text-xs text-orange-600">Yakin nonaktifkan?</span>
+                            <form action={deletePerson.bind(null, p.id)}>
+                              <button type="submit" className="text-xs bg-orange-500 text-white px-2 py-1 rounded">Ya</button>
+                            </form>
+                            <button onClick={() => setConfirmNonaktif(null)} className="text-xs text-gray-500 px-2 py-1 rounded border border-gray-200">Batal</button>
+                          </div>
+                        )}
                         <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => { setEditingPerson(p); setShowForm(true) }}
-                            className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
-                            ✏️ Edit
-                          </button>
-                          <form action={deletePerson.bind(null, p.id)}>
-                            <button type="submit"
-                              className="text-xs text-orange-500 hover:text-orange-700 px-2 py-1 rounded border border-orange-200 hover:bg-orange-50">
-                              🔒 Nonaktifkan
+                          {p.isActive && (
+                            <button onClick={() => { setEditingPerson(p); setShowForm(true) }}
+                              className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
+                              ✏️ Edit
                             </button>
-                          </form>
+                          )}
+                          <button
+                            onClick={() => setConfirmNonaktif(confirmNonaktif === p.id ? null : p.id)}
+                            className={`text-xs px-2 py-1 rounded border transition-colors ${
+                              p.isActive
+                                ? 'text-orange-500 border-orange-200 hover:bg-orange-50'
+                                : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                            }`}>
+                            {p.isActive ? '🔒 Nonaktifkan' : '🔓 Aktifkan'}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -389,6 +422,15 @@ export default function PersonsClient({
                     </span>
                   </td>
                   <td className="px-6 py-3 text-right">
+                    {confirmNonaktifType === t.id && (
+                      <div className="flex items-center justify-end gap-2 mb-2">
+                        <span className="text-xs text-orange-600">Yakin nonaktifkan?</span>
+                        <form action={deletePersonType.bind(null, t.id)}>
+                          <button type="submit" className="text-xs bg-orange-500 text-white px-2 py-1 rounded">Ya</button>
+                        </form>
+                        <button onClick={() => setConfirmNonaktifType(null)} className="text-xs text-gray-500 px-2 py-1 rounded border border-gray-200">Batal</button>
+                      </div>
+                    )}
                     <div className="flex items-center justify-end gap-2">
                       {t.isActive && (
                         <button onClick={() => { setEditingType(t); setShowTypeForm(true) }}
@@ -396,16 +438,15 @@ export default function PersonsClient({
                           ✏️ Edit
                         </button>
                       )}
-                      <form action={deletePersonType.bind(null, t.id)}>
-                        <button type="submit"
-                          className={`text-xs px-2 py-1 rounded border transition-colors ${
-                            t.isActive
-                              ? 'text-orange-500 border-orange-200 hover:bg-orange-50'
-                              : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
-                          }`}>
-                          {t.isActive ? '🔒 Nonaktifkan' : '🔓 Aktifkan'}
-                        </button>
-                      </form>
+                      <button
+                        onClick={() => setConfirmNonaktifType(confirmNonaktifType === t.id ? null : t.id)}
+                        className={`text-xs px-2 py-1 rounded border transition-colors ${
+                          t.isActive
+                            ? 'text-orange-500 border-orange-200 hover:bg-orange-50'
+                            : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                        }`}>
+                        {t.isActive ? '🔒 Nonaktifkan' : '🔓 Aktifkan'}
+                      </button>
                     </div>
                   </td>
                 </tr>
