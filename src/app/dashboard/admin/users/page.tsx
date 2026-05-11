@@ -36,7 +36,7 @@ export default async function AdminUsersPage() {
       orderBy: { fullName: 'asc' }
     }),
     prisma.role.findMany({
-      where: { entityId: { in: entityIds }, isActive: true },
+      where: { entityId: { in: entityIds } },
       orderBy: [{ isDefault: 'desc' }, { name: 'asc' }]
     }),
     prisma.entity.findMany({

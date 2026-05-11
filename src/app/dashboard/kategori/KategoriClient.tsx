@@ -21,10 +21,14 @@ export default function KategoriClient({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [filter, setFilter] = useState('all')
+  const [showInactive, setShowInactive] = useState(false)
+  const [confirmToggle, setConfirmToggle] = useState<string | null>(null)
 
-  const filtered = initialData.filter(k =>
-    filter === 'all' ? true : k.type === filter
-  )
+  const filtered = initialData.filter(k => {
+    const matchActive = showInactive ? true : k.isActive
+    const matchType = filter === 'all' ? true : k.type === filter
+    return matchActive && matchType
+  })
 
   const pemasukan = initialData.filter(k => k.type === 'INCOME' && k.isActive)
   const pengeluaran = initialData.filter(k => k.type === 'EXPENSE' && k.isActive)
@@ -68,7 +72,6 @@ export default function KategoriClient({
         </div>
       )}
 
-      {/* Edit Form */}
       {editingId && (
         <div className="bg-white rounded-2xl border border-emerald-200 p-6">
           <h3 className="font-semibold text-gray-900 mb-4">✏️ Edit Kategori</h3>
@@ -101,15 +104,23 @@ export default function KategoriClient({
         </div>
       </div>
 
-      <div className="flex gap-2">
-        {['all', 'INCOME', 'EXPENSE'].map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filter === f ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-            }`}>
-            {f === 'all' ? 'Semua' : f === 'INCOME' ? 'Pemasukan' : 'Pengeluaran'}
-          </button>
-        ))}
+      {/* Filter & Toggle */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex gap-2">
+          {['all', 'INCOME', 'EXPENSE'].map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                filter === f ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}>
+              {f === 'all' ? 'Semua' : f === 'INCOME' ? 'Pemasukan' : 'Pengeluaran'}
+            </button>
+          ))}
+        </div>
+        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+          <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)}
+            className="w-4 h-4 text-emerald-600 rounded border-gray-300" />
+          Tampilkan nonaktif
+        </label>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -147,24 +158,33 @@ export default function KategoriClient({
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
+                    {confirmToggle === k.id && (
+                      <div className="flex items-center justify-end gap-2 mb-2">
+                        <span className="text-xs text-orange-600">
+                          {k.isActive ? 'Yakin nonaktifkan?' : 'Yakin aktifkan?'}
+                        </span>
+                        <form action={toggleKategori.bind(null, k.id, !k.isActive)}>
+                          <button type="submit" className="text-xs bg-orange-500 text-white px-2 py-1 rounded">Ya</button>
+                        </form>
+                        <button onClick={() => setConfirmToggle(null)}
+                          className="text-xs text-gray-500 px-2 py-1 rounded border border-gray-200">Batal</button>
+                      </div>
+                    )}
                     <div className="flex items-center justify-end gap-2">
                       {k.isActive && (
-                        <button
-                          onClick={() => { setEditingId(k.id); setEditName(k.name) }}
+                        <button onClick={() => { setEditingId(k.id); setEditName(k.name) }}
                           className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
                           ✏️ Edit
                         </button>
                       )}
-                      <form action={toggleKategori.bind(null, k.id, !k.isActive)}>
-                        <button type="submit"
-                          className={`text-xs px-2 py-1 rounded border transition-colors ${
-                            k.isActive
-                              ? 'text-orange-500 border-orange-200 hover:bg-orange-50'
-                              : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
-                          }`}>
-                          {k.isActive ? '🔒 Nonaktifkan' : '🔓 Aktifkan'}
-                        </button>
-                      </form>
+                      <button onClick={() => setConfirmToggle(confirmToggle === k.id ? null : k.id)}
+                        className={`text-xs px-2 py-1 rounded border transition-colors ${
+                          k.isActive
+                            ? 'text-orange-500 border-orange-200 hover:bg-orange-50'
+                            : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                        }`}>
+                        {k.isActive ? '🔒 Nonaktifkan' : '🔓 Aktifkan'}
+                      </button>
                     </div>
                   </td>
                 </tr>
