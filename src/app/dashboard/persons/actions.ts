@@ -54,8 +54,12 @@ export async function updatePerson(id: string, formData: FormData) {
   revalidatePath('/dashboard/persons')
 }
 
+// Soft delete — nonaktifkan person
 export async function deletePerson(id: string) {
-  await prisma.person.delete({ where: { id } })
+  await prisma.person.update({
+    where: { id },
+    data: { isActive: false, status: 'SUSPENDED' }
+  })
   revalidatePath('/dashboard/persons')
 }
 
@@ -83,8 +87,12 @@ export async function updatePersonType(id: string, formData: FormData) {
   revalidatePath('/dashboard/persons')
 }
 
+// Soft delete — nonaktifkan tipe person
 export async function deletePersonType(id: string) {
-  await prisma.personType.delete({ where: { id } })
+  await prisma.personType.update({
+    where: { id },
+    data: { isActive: false }
+  })
   revalidatePath('/dashboard/persons')
 }
 
@@ -93,22 +101,5 @@ export async function linkPersonToUser(userId: string, personId: string) {
     where: { id: userId },
     data: { personId }
   })
-  revalidatePath('/dashboard/admin/users')
-}
-
-export async function unlinkPersonFromUser(userId: string) {
-  const person = await prisma.person.create({
-    data: {
-      fullName: 'Unlinked User',
-      status: 'ACTIVE',
-      isActive: true,
-    }
-  })
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { personId: person.id }
-  })
-
   revalidatePath('/dashboard/admin/users')
 }

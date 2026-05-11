@@ -71,8 +71,12 @@ export async function updateTransaksi(id: string, formData: FormData) {
   revalidatePath('/dashboard')
 }
 
+// Soft delete — cancel transaksi
 export async function deleteTransaksi(id: string) {
-  await prisma.transaction.delete({ where: { id } })
+  await prisma.transaction.update({
+    where: { id },
+    data: { approvalStatus: 'CANCELLED' }
+  })
   revalidatePath('/dashboard/transaksi')
   revalidatePath('/dashboard')
 }

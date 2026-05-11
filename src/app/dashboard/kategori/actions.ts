@@ -6,28 +6,37 @@ import { revalidatePath } from 'next/cache'
 
 export async function createKategori(formData: FormData, entityId: string) {
   const name = formData.get('name') as string
-  const typeRaw = formData.get('type') as string
-
-  if (!name || !typeRaw) throw new Error('Data tidak lengkap')
-
-  const type = typeRaw === 'income' ? TransactionType.INCOME : TransactionType.EXPENSE
+  const type = formData.get('type') as string
 
   await prisma.category.create({
-    data: { name, type, entityId }
+    data: {
+      entityId,
+      name,
+      type: type === 'INCOME' ? TransactionType.INCOME : TransactionType.EXPENSE,
+      isActive: true,
+    }
   })
 
   revalidatePath('/dashboard/kategori')
 }
 
-export async function deleteKategori(id: string) {
-  await prisma.category.delete({ where: { id } })
-  revalidatePath('/dashboard/kategori')
-}
+export async function updateKategori(id: string, formData: FormData) {
+  const name = formData.get('name') as string
 
-export async function toggleKategori(id: string, isActive: boolean) {
   await prisma.category.update({
     where: { id },
-    data: { isActive: !isActive }
+    data: { name }
   })
+
+  revalidatePath('/dashboard/kategori')
+}
+
+// Soft delete — nonaktifkan kategori
+export async function deleteKategori(id: string) {
+  await prisma.category.update({
+    where: { id },
+    data: { isActive: false }
+  })
+
   revalidatePath('/dashboard/kategori')
 }

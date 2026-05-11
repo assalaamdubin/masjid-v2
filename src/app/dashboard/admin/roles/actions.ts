@@ -25,7 +25,23 @@ export async function updateRole(id: string, formData: FormData) {
   revalidatePath('/dashboard/admin/users')
 }
 
+// Soft delete — nonaktifkan role
 export async function deleteRole(id: string) {
-  await prisma.role.delete({ where: { id } })
+  await prisma.role.update({
+    where: { id },
+    data: { isActive: false }
+  })
+  revalidatePath('/dashboard/admin/users')
+}
+
+export async function assignRoleToMember(personId: string, entityId: string, roleId: string, memberRole: string, isBendahara: boolean) {
+  await prisma.entityMember.updateMany({
+    where: { personId, entityId },
+    data: {
+      role: memberRole as any,
+      roleId: roleId || null,
+      isBendahara,
+    }
+  })
   revalidatePath('/dashboard/admin/users')
 }

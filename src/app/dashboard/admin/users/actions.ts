@@ -3,7 +3,6 @@
 import { prisma } from '@/lib/prisma'
 import { PersonStatus, MemberRole } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 
 export async function approveUser(personId: string) {
   await prisma.person.update({
@@ -37,27 +36,22 @@ export async function updateUserRole(personId: string, entityId: string, role: M
   revalidatePath('/dashboard/admin/users')
 }
 
+// Soft delete — nonaktifkan user & person
 export async function deleteUser(personId: string) {
-  // Hapus entity members dulu
-  await prisma.entityMember.deleteMany({ where: { personId } })
+  await prisma.person.update({
+    where: { id: personId },
+    data: { isActive: false, status: PersonStatus.SUSPENDED }
+  })
 
-  // Hapus notifications
-  await prisma.notification.deleteMany({ where: { personId } })
+  await prisma.user.update({
+    where: { personId },
+    data: { isActive: false }
+  })
 
-  // Ambil user untuk dapat supabaseId
-  const user = await prisma.user.findUnique({ where: { personId } })
-
-  // Hapus user record
-  await prisma.user.deleteMany({ where: { personId } })
-
-  // Hapus person
-  await prisma.person.delete({ where: { id: personId } })
-
-  // Hapus dari Supabase Auth
-  if (user?.supabaseId) {
-    const supabase = await createClient()
-    await supabase.auth.admin.deleteUser(user.supabaseId)
-  }
+  await prisma.entityMember.updateMany({
+    where: { personId },
+    data: { isActive: false }
+  })
 
   revalidatePath('/dashboard/admin/users')
 }
