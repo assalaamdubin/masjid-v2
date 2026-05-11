@@ -38,6 +38,16 @@ export async function approveTransaction(transactionId: string, approverId: stri
     }
   })
 
+  // Audit log
+  await createAuditLog({
+    entityName: 'Transaction',
+    entityId: transactionId,
+    action: 'APPROVE',
+    description: `Menyetujui pengeluaran ${transaction.category.name} sebesar ${formatRupiah(transaction.amount)}`,
+    personId: approverId,
+    personName: approver.fullName,
+  })
+
   // Build chain
   const chain = await buildApprovalChain(transaction.createdById, transaction.entityId)
 
@@ -140,6 +150,16 @@ export async function rejectTransaction(transactionId: string, approverId: strin
       action: 'REJECT',
       note,
     }
+  })
+
+  // Audit log
+  await createAuditLog({
+    entityName: 'Transaction',
+    entityId: transactionId,
+    action: 'REJECT',
+    description: `Menolak pengeluaran ${transaction.category.name} sebesar ${formatRupiah(transaction.amount)}. Alasan: ${note}`,
+    personId: approverId,
+    personName: approver.fullName,
   })
 
   // Notif in-app ke pembuat
