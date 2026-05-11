@@ -373,82 +373,126 @@ export default function TransaksiClient({
             <p className="text-sm">{search ? 'Tidak ada transaksi yang cocok' : 'Belum ada transaksi'}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Tanggal</th>
-                  <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Kategori</th>
-                  {isAdmin && <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Entity</th>}
-                  <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Keterangan</th>
-                  <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Status</th>
-                  <th className="text-center text-xs font-medium text-gray-500 px-6 py-3">Bukti</th>
-                  <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Nominal</th>
-                  <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.map((t) => (
-                  <tr key={t.id} className={`hover:bg-gray-50 ${editingId === t.id ? 'bg-emerald-50' : ''}`}>
-                    <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{formatDate(t.date)}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        t.type === 'INCOME' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                      }`}>
-                        {t.category.name}
-                      </span>
-                    </td>
-                    {isAdmin && (
-                      <td className="px-6 py-4">
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{t.entity.name}</span>
-                      </td>
-                    )}
-                    <td className="px-6 py-4 text-sm text-gray-600">{t.description || '-'}</td>
-                    <td className="px-6 py-4">
-                      <StatusBadge status={t.approvalStatus} type={t.type} />
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {t.attachmentUrl ? (
-                        <button onClick={() => setViewingImage(t.attachmentUrl)}
-                          className="text-emerald-600 hover:text-emerald-700" title="Lihat bukti">
-                          🖼️
-                        </button>
-                      ) : (
-                        <span className="text-gray-300 text-xs">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className={`text-sm font-semibold ${t.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'}`}>
+<>
+            {/* Mobile Card Layout */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {filtered.map((t) => (
+                <div key={t.id} className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          t.type === 'INCOME' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {t.category.name}
+                        </span>
+                        <StatusBadge status={t.approvalStatus} type={t.type} />
+                      </div>
+                      <p className="text-xs text-gray-500">{formatDate(t.date)}</p>
+                      {t.description && <p className="text-xs text-gray-600 truncate">{t.description}</p>}
+                      {isAdmin && <p className="text-xs text-gray-400">{t.entity.name}</p>}
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className={`text-base font-bold ${t.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'}`}>
                         {t.type === 'INCOME' ? '+' : '-'}{formatRupiah(t.amount)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {canEdit(t) ? (
-                          <button onClick={() => startEdit(t)}
-                            className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
-                            ✏️ Edit
+                      </p>
+                      {t.attachmentUrl && (
+                        <button onClick={() => setViewingImage(t.attachmentUrl)} className="text-xs text-emerald-600">🖼️</button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {canEdit(t) ? (
+                      <button onClick={() => startEdit(t)} className="text-xs text-blue-500 px-3 py-1.5 rounded-lg border border-blue-200">✏️ Edit</button>
+                    ) : (
+                      <span className="text-xs text-gray-400">🔒 Terkunci</span>
+                    )}
+                    {(t.approvalStatus === 'DRAFT' || t.approvalStatus === 'REJECTED' || t.type === 'INCOME') && (
+                      <form action={deleteTransaksi.bind(null, t.id)}>
+                        <button type="submit" className="text-xs text-red-500 px-3 py-1.5 rounded-lg border border-red-200">🗑️ Hapus</button>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop Table Layout */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Tanggal</th>
+                    <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Kategori</th>
+                    {isAdmin && <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Entity</th>}
+                    <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Keterangan</th>
+                    <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Status</th>
+                    <th className="text-center text-xs font-medium text-gray-500 px-6 py-3">Bukti</th>
+                    <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Nominal</th>
+                    <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filtered.map((t) => (
+                    <tr key={t.id} className={`hover:bg-gray-50 ${editingId === t.id ? 'bg-emerald-50' : ''}`}>
+                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{formatDate(t.date)}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          t.type === 'INCOME' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {t.category.name}
+                        </span>
+                      </td>
+                      {isAdmin && (
+                        <td className="px-6 py-4">
+                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{t.entity.name}</span>
+                        </td>
+                      )}
+                      <td className="px-6 py-4 text-sm text-gray-600">{t.description || '-'}</td>
+                      <td className="px-6 py-4">
+                        <StatusBadge status={t.approvalStatus} type={t.type} />
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {t.attachmentUrl ? (
+                          <button onClick={() => setViewingImage(t.attachmentUrl)}
+                            className="text-emerald-600 hover:text-emerald-700" title="Lihat bukti">
+                            🖼️
                           </button>
                         ) : (
-                          <span className="text-xs text-gray-400 px-2 py-1">🔒 Terkunci</span>
+                          <span className="text-gray-300 text-xs">-</span>
                         )}
-                        {(t.approvalStatus === 'DRAFT' || t.approvalStatus === 'REJECTED' || t.type === 'INCOME') && (
-                          <form action={deleteTransaksi.bind(null, t.id)}>
-                            <button type="submit"
-                              className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50">
-                              🗑️ Hapus
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className={`text-sm font-semibold ${t.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {t.type === 'INCOME' ? '+' : '-'}{formatRupiah(t.amount)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {canEdit(t) ? (
+                            <button onClick={() => startEdit(t)}
+                              className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
+                              ✏️ Edit
                             </button>
-                          </form>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                          ) : (
+                            <span className="text-xs text-gray-400 px-2 py-1">🔒 Terkunci</span>
+                          )}
+                          {(t.approvalStatus === 'DRAFT' || t.approvalStatus === 'REJECTED' || t.type === 'INCOME') && (
+                            <form action={deleteTransaksi.bind(null, t.id)}>
+                              <button type="submit"
+                                className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50">
+                                🗑️ Hapus
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+</>
+        )}      </div>
     </div>
   )
 }
