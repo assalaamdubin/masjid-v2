@@ -170,13 +170,13 @@ export default function UsersClient({
                   {confirmDelete === user.personId && (
                     <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                       <p className="text-sm font-medium text-red-700 mb-3">
-                        Yakin hapus user <strong>{user.person.fullName}</strong>? Tindakan ini tidak bisa dibatalkan!
+                        Yakin nonaktifkan user <strong>{user.person.fullName}</strong>? Tindakan ini tidak bisa dibatalkan!
                       </p>
                       <div className="flex gap-2">
                         <form action={deleteUser.bind(null, user.personId)}>
                           <button type="submit"
                             className="bg-red-600 hover:bg-red-700 text-white text-xs font-medium px-4 py-2 rounded-lg">
-                            Ya, Hapus
+                            Ya, Nonaktifkan
                           </button>
                         </form>
                         <button onClick={() => setConfirmDelete(null)}
@@ -247,8 +247,8 @@ export default function UsersClient({
                       {/* Delete */}
                       <button
                         onClick={() => setConfirmDelete(user.personId)}
-                        className="text-xs text-red-500 hover:text-red-700 px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50">
-                        🗑️ Hapus
+                        className="text-xs text-orange-500 hover:text-orange-700 px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50">
+                        🔒 Nonaktifkan
                       </button>
 
                       <LinkPersonForm
@@ -361,8 +361,8 @@ export default function UsersClient({
                             {!role.isDefault && (
                               <form action={deleteRole.bind(null, role.id)}>
                                 <button type="submit"
-                                  className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50">
-                                  🗑️ Hapus
+                                  className="text-xs text-orange-500 hover:text-orange-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50">
+                                  🔒 Nonaktifkan
                                 </button>
                               </form>
                             )}

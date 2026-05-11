@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createPerson, updatePerson, deletePerson, createPersonType, updatePersonType, deletePersonType } from './actions'
 
-type PersonType = { id: string; name: string; entityId: string; isPengurus: boolean }
+type PersonType = { id: string; name: string; entityId: string; isPengurus: boolean; isActive: boolean }
 type Entity = { id: string; name: string; type: string }
 type Person = {
   id: string
@@ -41,15 +41,16 @@ export default function PersonsClient({
   const [search, setSearch] = useState('')
 
   const filtered = persons.filter(p =>
-    p.fullName.toLowerCase().includes(search.toLowerCase()) ||
+    p.isActive &&
+    (p.fullName.toLowerCase().includes(search.toLowerCase()) ||
     (p.email?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-    (p.personType?.name.toLowerCase().includes(search.toLowerCase()) ?? false)
+    (p.personType?.name.toLowerCase().includes(search.toLowerCase()) ?? false))
   )
 
-  const roots = persons.filter(p => !p.reportToId)
+  const roots = persons.filter(p => !p.reportToId && p.isActive)
 
   function OrgNode({ person, level }: { person: Person; level: number }) {
-    const subs = persons.filter(p => p.reportToId === person.id)
+    const subs = persons.filter(p => p.reportToId === person.id && p.isActive)
     return (
       <div className={`${level > 0 ? 'ml-6 border-l-2 border-gray-200 pl-4' : ''}`}>
         <div className={`flex items-center gap-3 py-2 ${level === 0 ? 'mt-2' : 'mt-1'}`}>
@@ -63,24 +64,18 @@ export default function PersonsClient({
             <div className="flex items-center gap-2">
               {person.personType && (
                 <span className={`text-xs px-1.5 py-0.5 rounded ${
-                  person.personType.isPengurus
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-gray-100 text-gray-600'
+                  person.personType.isPengurus ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
                 }`}>
                   {person.personType.name}
                 </span>
               )}
               {person.user && (
-                <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
-                  Has Account
-                </span>
+                <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Has Account</span>
               )}
             </div>
           </div>
         </div>
-        {subs.map(sub => (
-          <OrgNode key={sub.id} person={sub} level={level + 1} />
-        ))}
+        {subs.map(sub => <OrgNode key={sub.id} person={sub} level={level + 1} />)}
       </div>
     )
   }
@@ -148,7 +143,6 @@ export default function PersonsClient({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1.5">Email</label>
@@ -163,17 +157,14 @@ export default function PersonsClient({
                 </select>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1.5">Tipe Person</label>
                 <select name="personTypeId" defaultValue={editingPerson?.personTypeId ?? ''}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                   <option value="">Pilih tipe...</option>
-                  {personTypes.map(t => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} {t.isPengurus ? '⭐' : ''}
-                    </option>
+                  {personTypes.filter(t => t.isActive).map(t => (
+                    <option key={t.id} value={t.id}>{t.name} {t.isPengurus ? '⭐' : ''}</option>
                   ))}
                 </select>
               </div>
@@ -182,19 +173,17 @@ export default function PersonsClient({
                 <select name="reportToId" defaultValue={editingPerson?.reportToId ?? ''}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                   <option value="">Tidak ada atasan</option>
-                  {persons.filter(p => p.id !== editingPerson?.id).map(p => (
+                  {persons.filter(p => p.id !== editingPerson?.id && p.isActive).map(p => (
                     <option key={p.id} value={p.id}>{p.fullName}</option>
                   ))}
                 </select>
               </div>
             </div>
-
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">Alamat</label>
               <textarea name="address" rows={2} defaultValue={editingPerson?.address ?? ''}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
             </div>
-
             <div className="flex gap-3 pt-2">
               <button type="submit"
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2.5 rounded-lg">
@@ -237,21 +226,14 @@ export default function PersonsClient({
                 </div>
               )}
             </div>
-
             <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="isPengurus"
-                name="isPengurus"
-                value="true"
+              <input type="checkbox" id="isPengurus" name="isPengurus" value="true"
                 defaultChecked={editingType?.isPengurus}
-                className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500"
-              />
+                className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" />
               <label htmlFor="isPengurus" className="text-sm text-gray-700">
-                ⭐ Tandai sebagai <strong>Pengurus</strong> (bukan jamaah biasa)
+                ⭐ Tandai sebagai <strong>Pengurus</strong>
               </label>
             </div>
-
             <div className="flex gap-3 pt-2">
               <button type="submit"
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2.5 rounded-lg">
@@ -272,7 +254,6 @@ export default function PersonsClient({
           <input type="text" placeholder="🔍 Cari person..." value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
             {filtered.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
@@ -306,9 +287,7 @@ export default function PersonsClient({
                       <td className="px-6 py-4">
                         {p.personType ? (
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            p.personType.isPengurus
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-gray-100 text-gray-600'
+                            p.personType.isPengurus ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
                           }`}>
                             {p.personType.isPengurus ? '⭐ ' : ''}{p.personType.name}
                           </span>
@@ -337,8 +316,8 @@ export default function PersonsClient({
                           </button>
                           <form action={deletePerson.bind(null, p.id)}>
                             <button type="submit"
-                              className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50">
-                              🗑️
+                              className="text-xs text-orange-500 hover:text-orange-700 px-2 py-1 rounded border border-orange-200 hover:bg-orange-50">
+                              🔒 Nonaktifkan
                             </button>
                           </form>
                         </div>
@@ -357,16 +336,10 @@ export default function PersonsClient({
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h3 className="font-semibold text-gray-900 mb-2">🏢 Struktur Organisasi</h3>
           <div className="flex items-center gap-4 mb-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span> Level 1
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> Level 2
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-gray-400 inline-block"></span> Level 3+
-            </span>
-            <span className="flex items-center gap-1">⭐ Pengurus</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span> Level 1</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> Level 2</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-gray-400 inline-block"></span> Level 3+</span>
+            <span>⭐ Pengurus</span>
           </div>
           {roots.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
@@ -390,12 +363,13 @@ export default function PersonsClient({
                 <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Nama Tipe</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Entity</th>
                 <th className="text-center text-xs font-medium text-gray-500 px-6 py-3">Pengurus</th>
+                <th className="text-center text-xs font-medium text-gray-500 px-6 py-3">Status</th>
                 <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {personTypes.map(t => (
-                <tr key={t.id} className="hover:bg-gray-50">
+                <tr key={t.id} className={`hover:bg-gray-50 ${!t.isActive ? 'opacity-50' : ''}`}>
                   <td className="px-6 py-3 text-sm font-medium text-gray-900">{t.name}</td>
                   <td className="px-6 py-3 text-sm text-gray-600">
                     {entities.find(e => e.id === t.entityId)?.name ?? '-'}
@@ -407,17 +381,29 @@ export default function PersonsClient({
                       <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">Jamaah</span>
                     )}
                   </td>
+                  <td className="px-6 py-3 text-center">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      t.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {t.isActive ? '✅ Aktif' : '⛔ Nonaktif'}
+                    </span>
+                  </td>
                   <td className="px-6 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => { setEditingType(t); setShowTypeForm(true) }}
-                        className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
-                        ✏️ Edit
-                      </button>
+                      {t.isActive && (
+                        <button onClick={() => { setEditingType(t); setShowTypeForm(true) }}
+                          className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
+                          ✏️ Edit
+                        </button>
+                      )}
                       <form action={deletePersonType.bind(null, t.id)}>
                         <button type="submit"
-                          className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50">
-                          🗑️ Hapus
+                          className={`text-xs px-2 py-1 rounded border transition-colors ${
+                            t.isActive
+                              ? 'text-orange-500 border-orange-200 hover:bg-orange-50'
+                              : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                          }`}>
+                          {t.isActive ? '🔒 Nonaktifkan' : '🔓 Aktifkan'}
                         </button>
                       </form>
                     </div>
