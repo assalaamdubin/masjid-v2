@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { createTransaksi, deleteTransaksi, updateTransaksi, updateAttachment } from './actions'
 
 const UploadBukti = dynamic(() => import('@/components/dashboard/UploadBukti'), { ssr: false })
+const TransactionComments = dynamic(() => import('@/components/dashboard/TransactionComments'), { ssr: false })
 
 type Kategori = {
   id: string
@@ -26,6 +27,12 @@ type Transaksi = {
   paymentMethod: string | null
   attachmentUrl: string | null
   approvalStatus: string
+  comments: {
+    id: string
+    message: string
+    createdAt: Date
+    person: { id: string; fullName: string }
+  }[]
   category: { id: string; name: string; type: string }
   entity: { name: string }
 }
@@ -73,6 +80,7 @@ export default function TransaksiClient({
   kategori,
   entityId,
   personId,
+  personName,
   isAdmin,
   entities,
 }: {
@@ -80,6 +88,7 @@ export default function TransaksiClient({
   kategori: Kategori[]
   entityId: string
   personId: string
+  personName: string
   isAdmin: boolean
   entities: Entity[]
 }) {
@@ -412,6 +421,15 @@ export default function TransaksiClient({
                         <button type="submit" className="text-xs text-red-500 px-3 py-1.5 rounded-lg border border-red-200">🗑️ Hapus</button>
                       </form>
                     )}
+                  </div>
+                  {/* Comments di mobile */}
+                  <div className="pt-2 border-t border-gray-100 mt-2">
+                    <TransactionComments
+                      transactionId={t.id}
+                      comments={t.comments}
+                      personId={personId}
+                      personName={personName}
+                    />
                   </div>
                 </div>
               ))}

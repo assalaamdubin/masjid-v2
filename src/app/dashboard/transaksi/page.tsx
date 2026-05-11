@@ -20,7 +20,15 @@ export default async function TransaksiPage() {
   const [transaksi, kategori, entities] = await Promise.all([
     prisma.transaction.findMany({
       where: { entityId: { in: entityIds } },
-      include: { category: true, createdBy: true, entity: true },
+      include: {
+        category: true,
+        createdBy: true,
+        entity: true,
+        comments: {
+          include: { person: true },
+          orderBy: { createdAt: 'asc' }
+        }
+      },
       orderBy: { date: 'desc' },
       take: 50,
     }),
@@ -40,6 +48,7 @@ export default async function TransaksiPage() {
       kategori={kategori}
       entityId={activeEntityId}
       personId={person.id}
+      personName={person.fullName}
       isAdmin={isAdmin}
       entities={entities}
     />

@@ -67,6 +67,7 @@ model Person {
   notifications Notification[]
   approvalLogs  ApprovalLog[]
   auditLogs     AuditLog[]
+  comments      TransactionComment[]
 
   @@map("persons")
 }
@@ -213,6 +214,7 @@ model Transaction {
   createdBy       Person        @relation(fields: [createdById], references: [id])
   approvalLogs    ApprovalLog[]
   notifications   Notification[]
+  comments        TransactionComment[]
 
   @@map("transactions")
 }
@@ -293,6 +295,20 @@ model AuditLog {
   person      Person?  @relation(fields: [personId], references: [id])
 
   @@map("audit_logs")
+}
+
+// ==================== TRANSACTION COMMENTS ====================
+model TransactionComment {
+  id            String   @id @default(uuid())
+  transactionId String
+  personId      String
+  message       String
+  createdAt     DateTime @default(now())
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  person        Person      @relation(fields: [personId], references: [id])
+
+  @@map("transaction_comments")
 }
 // ==================== MOSQUE PROFILE ====================
 model MosqueProfile {
