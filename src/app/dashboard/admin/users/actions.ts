@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { PersonStatus, MemberRole } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { createAuditLog } from '@/lib/audit'
 
 function getAdminClient() {
   return createAdminClient(
@@ -21,6 +22,15 @@ export async function approveUser(personId: string) {
   await prisma.entityMember.updateMany({
     where: { personId },
     data: { isActive: true }
+  })
+
+  const person = await prisma.person.findUnique({ where: { id: personId } })
+  await createAuditLog({
+    entityName: 'User',
+    entityId: personId,
+    action: 'ACTIVATE',
+    description: `Approve user: ${person?.fullName ?? personId}`,
+    personName: 'Admin',
   })
 
   revalidatePath('/dashboard/admin/users')

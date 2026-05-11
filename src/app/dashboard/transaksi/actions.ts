@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { TransactionType } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { submitTransactionForApproval } from '@/lib/approval'
+import { createAuditLog } from '@/lib/audit'
 
 export async function createTransaksi(formData: FormData, entityId: string, personId: string) {
   const type = formData.get('type') as string
@@ -30,6 +31,17 @@ export async function createTransaksi(formData: FormData, entityId: string, pers
       createdById: personId,
       approvalStatus: isExpense ? 'PENDING_APPROVAL' : 'APPROVED',
     }
+  })
+
+  // Audit log
+  const person = await prisma.person.findUnique({ where: { id: personId } })
+  await createAuditLog({
+    entityName: 'Transaction',
+    entityId: transaction.id,
+    action: 'CREATE',
+    description: `Menambah transaksi ${isExpense ? 'pengeluaran' : 'pemasukan'} ${formData.get('description') || ''}`,
+    personId,
+    personName: person?.fullName ?? 'Unknown',
   })
 
   if (isExpense) {

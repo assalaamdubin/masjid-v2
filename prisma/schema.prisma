@@ -66,6 +66,7 @@ model Person {
   transactions  Transaction[]
   notifications Notification[]
   approvalLogs  ApprovalLog[]
+  auditLogs     AuditLog[]
 
   @@map("persons")
 }
@@ -276,6 +277,23 @@ enum NotificationType {
   INFO
 }
 
+
+// ==================== AUDIT LOG ====================
+model AuditLog {
+  id          String   @id @default(uuid())
+  entityName  String
+  entityId    String?
+  action      String
+  description String
+  metadata    Json?
+  personId    String?
+  personName  String
+  createdAt   DateTime @default(now())
+
+  person      Person?  @relation(fields: [personId], references: [id])
+
+  @@map("audit_logs")
+}
 // ==================== MOSQUE PROFILE ====================
 model MosqueProfile {
   id            String   @id @default(uuid())

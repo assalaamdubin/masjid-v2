@@ -16,6 +16,7 @@ const allMenus = [
   { href: '/dashboard/laporan', label: 'Laporan', icon: '📋', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA', 'PENGURUS', 'BENDAHARA_DKM', 'BENDAHARA_YAYASAN', 'VIEWER'] },
   { href: '/dashboard/persons', label: 'Data Person', icon: '👤', roles: ['SUPER_ADMIN', 'KETUA'] },
   { href: '/dashboard/admin/users', label: 'Manajemen User', icon: '👥', roles: ['SUPER_ADMIN'] },
+  { href: '/dashboard/audit', label: 'Audit Log', icon: '📋', roles: ['SUPER_ADMIN'] },
   { href: '/dashboard/profil', label: 'Profil Saya', icon: '👤', roles: ['SUPER_ADMIN', 'KETUA', 'BENDAHARA', 'PENGURUS', 'VIEWER'] },
   { href: '/dashboard/pengaturan', label: 'Pengaturan', icon: '⚙️', roles: ['SUPER_ADMIN'] },
 ]
