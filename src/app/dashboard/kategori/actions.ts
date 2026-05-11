@@ -40,3 +40,11 @@ export async function deleteKategori(id: string) {
 
   revalidatePath('/dashboard/kategori')
 }
+
+export async function toggleKategori(id: string, isActive: boolean) {
+  await prisma.category.update({
+    where: { id },
+    data: { isActive }
+  })
+  revalidatePath('/dashboard/kategori')
+}
