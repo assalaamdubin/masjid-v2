@@ -40,6 +40,7 @@ export default function PersonsClient({
   const [editingType, setEditingType] = useState<PersonType | null>(null)
   const [search, setSearch] = useState('')
   const [showInactive, setShowInactive] = useState(false)
+  const [showInactiveTypes, setShowInactiveTypes] = useState(false)
   const [confirmNonaktif, setConfirmNonaktif] = useState<string | null>(null)
   const [confirmNonaktifType, setConfirmNonaktifType] = useState<string | null>(null)
 
@@ -389,7 +390,15 @@ export default function PersonsClient({
 
       {/* Tab: Tipe Person */}
       {tab === 'types' && (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input type="checkbox" checked={showInactiveTypes} onChange={e => setShowInactiveTypes(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 rounded border-gray-300" />
+              Tampilkan nonaktif
+            </label>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -401,7 +410,7 @@ export default function PersonsClient({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {personTypes.map(t => (
+              {personTypes.filter(t => showInactiveTypes ? true : t.isActive).map(t => (
                 <tr key={t.id} className={`hover:bg-gray-50 ${!t.isActive ? 'opacity-50' : ''}`}>
                   <td className="px-6 py-3 text-sm font-medium text-gray-900">{t.name}</td>
                   <td className="px-6 py-3 text-sm text-gray-600">
@@ -453,6 +462,7 @@ export default function PersonsClient({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
