@@ -21,7 +21,7 @@ export default async function PersonsPage() {
       orderBy: { fullName: 'asc' }
     }),
     prisma.personType.findMany({
-      where: { entityId: { in: entityIds }, isActive: true },
+      where: { entityId: { in: entityIds } },
       orderBy: { name: 'asc' }
     }),
     prisma.entity.findMany({
