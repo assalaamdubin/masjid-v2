@@ -3,6 +3,14 @@
 import { prisma } from '@/lib/prisma'
 import { PersonStatus, MemberRole } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+
+function getAdminClient() {
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function approveUser(personId: string) {
   await prisma.person.update({
@@ -36,8 +44,8 @@ export async function updateUserRole(personId: string, entityId: string, role: M
   revalidatePath('/dashboard/admin/users')
 }
 
-// Soft delete — nonaktifkan user & person
 export async function deleteUser(personId: string) {
+  // Soft delete di database
   await prisma.person.update({
     where: { id: personId },
     data: { isActive: false, status: PersonStatus.SUSPENDED }
@@ -52,6 +60,13 @@ export async function deleteUser(personId: string) {
     where: { personId },
     data: { isActive: false }
   })
+
+  // Hard delete di Supabase Auth
+  const user = await prisma.user.findUnique({ where: { personId } })
+  if (user?.supabaseId) {
+    const adminClient = getAdminClient()
+    await adminClient.auth.admin.deleteUser(user.supabaseId)
+  }
 
   revalidatePath('/dashboard/admin/users')
 }
