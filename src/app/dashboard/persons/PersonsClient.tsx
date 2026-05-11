@@ -275,91 +275,152 @@ export default function PersonsClient({
                 <p className="text-sm">Belum ada person</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Nama</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Tipe</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Entity</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Atasan</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Kontak</th>
-                    <th className="text-center text-xs font-medium text-gray-500 px-6 py-3">Akun</th>
-                    <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+              <>
+                {/* Mobile Card Layout */}
+                <div className="md:hidden divide-y divide-gray-100">
                   {filtered.map(p => (
-                    <tr key={p.id} className={`hover:bg-gray-50 ${!p.isActive ? 'opacity-50 bg-gray-50' : ''}`}>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${
+                    <div key={p.id} className={`p-4 space-y-2 ${!p.isActive ? 'opacity-50 bg-gray-50' : ''}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
                             p.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'
                           }`}>
                             {p.fullName.charAt(0).toUpperCase()}
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{p.fullName}</p>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{p.fullName}</p>
                             {!p.isActive && <span className="text-xs text-orange-500">⛔ Nonaktif</span>}
+                            <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                              {p.personType && (
+                                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                  p.personType.isPengurus ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                  {p.personType.isPengurus ? '⭐ ' : ''}{p.personType.name}
+                                </span>
+                              )}
+                              {p.user && <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">✅ Akun</span>}
+                            </div>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {p.personType ? (
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            p.personType.isPengurus ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
-                          }`}>
-                            {p.personType.isPengurus ? '⭐ ' : ''}{p.personType.name}
-                          </span>
-                        ) : <span className="text-gray-400 text-xs">-</span>}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{p.entity?.name ?? '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{p.reportTo?.fullName ?? '-'}</td>
-                      <td className="px-6 py-4">
-                        <div className="text-xs text-gray-500">
-                          {p.phoneNumber && <p>{p.phoneNumber}</p>}
-                          {p.email && <p>{p.email}</p>}
+                      </div>
+                      <div className="text-xs text-gray-500 space-y-0.5 pl-13">
+                        {p.entity && <p>🏢 {p.entity.name}</p>}
+                        {p.reportTo && <p>👤 Atasan: {p.reportTo.fullName}</p>}
+                        {p.phoneNumber && <p>📱 {p.phoneNumber}</p>}
+                      </div>
+                      {/* Konfirmasi nonaktif */}
+                      {confirmNonaktif === p.id && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-orange-600">Yakin?</span>
+                          <form action={deletePerson.bind(null, p.id)}>
+                            <button type="submit" className="text-xs bg-orange-500 text-white px-2 py-1 rounded">Ya</button>
+                          </form>
+                          <button onClick={() => setConfirmNonaktif(null)} className="text-xs text-gray-500 px-2 py-1 rounded border border-gray-200">Batal</button>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        {p.user ? (
-                          <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full">✅ Ada</span>
-                        ) : (
-                          <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">Tidak ada</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        {/* Konfirmasi nonaktif */}
-                        {confirmNonaktif === p.id && (
-                          <div className="flex items-center justify-end gap-2 mb-2">
-                            <span className="text-xs text-orange-600">Yakin nonaktifkan?</span>
-                            <form action={deletePerson.bind(null, p.id)}>
-                              <button type="submit" className="text-xs bg-orange-500 text-white px-2 py-1 rounded">Ya</button>
-                            </form>
-                            <button onClick={() => setConfirmNonaktif(null)} className="text-xs text-gray-500 px-2 py-1 rounded border border-gray-200">Batal</button>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-end gap-2">
-                          {p.isActive && (
-                            <button onClick={() => { setEditingPerson(p); setShowForm(true) }}
-                              className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
-                              ✏️ Edit
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setConfirmNonaktif(confirmNonaktif === p.id ? null : p.id)}
-                            className={`text-xs px-2 py-1 rounded border transition-colors ${
-                              p.isActive
-                                ? 'text-orange-500 border-orange-200 hover:bg-orange-50'
-                                : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
-                            }`}>
-                            {p.isActive ? '🔒 Nonaktifkan' : '🔓 Aktifkan'}
+                      )}
+                      <div className="flex gap-2">
+                        {p.isActive && (
+                          <button onClick={() => { setEditingPerson(p); setShowForm(true) }}
+                            className="text-xs text-blue-500 px-3 py-1.5 rounded-lg border border-blue-200">
+                            ✏️ Edit
                           </button>
-                        </div>
-                      </td>
-                    </tr>
+                        )}
+                        <button onClick={() => setConfirmNonaktif(confirmNonaktif === p.id ? null : p.id)}
+                          className={`text-xs px-3 py-1.5 rounded-lg border ${
+                            p.isActive ? 'text-orange-500 border-orange-200' : 'text-emerald-600 border-emerald-200'
+                          }`}>
+                          {p.isActive ? '🔒 Nonaktifkan' : '🔓 Aktifkan'}
+                        </button>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+
+                {/* Desktop Table Layout */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Nama</th>
+                        <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Tipe</th>
+                        <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Entity</th>
+                        <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Atasan</th>
+                        <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Kontak</th>
+                        <th className="text-center text-xs font-medium text-gray-500 px-6 py-3">Akun</th>
+                        <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filtered.map(p => (
+                        <tr key={p.id} className={`hover:bg-gray-50 ${!p.isActive ? 'opacity-50 bg-gray-50' : ''}`}>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                p.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'
+                              }`}>
+                                {p.fullName.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{p.fullName}</p>
+                                {!p.isActive && <span className="text-xs text-orange-500">⛔ Nonaktif</span>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {p.personType ? (
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                p.personType.isPengurus ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                              }`}>
+                                {p.personType.isPengurus ? '⭐ ' : ''}{p.personType.name}
+                              </span>
+                            ) : <span className="text-gray-400 text-xs">-</span>}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">{p.entity?.name ?? '-'}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600">{p.reportTo?.fullName ?? '-'}</td>
+                          <td className="px-6 py-4">
+                            <div className="text-xs text-gray-500">
+                              {p.phoneNumber && <p>{p.phoneNumber}</p>}
+                              {p.email && <p>{p.email}</p>}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            {p.user ? (
+                              <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full">✅ Ada</span>
+                            ) : (
+                              <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">Tidak ada</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            {confirmNonaktif === p.id && (
+                              <div className="flex items-center justify-end gap-2 mb-2">
+                                <span className="text-xs text-orange-600">Yakin nonaktifkan?</span>
+                                <form action={deletePerson.bind(null, p.id)}>
+                                  <button type="submit" className="text-xs bg-orange-500 text-white px-2 py-1 rounded">Ya</button>
+                                </form>
+                                <button onClick={() => setConfirmNonaktif(null)} className="text-xs text-gray-500 px-2 py-1 rounded border border-gray-200">Batal</button>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-end gap-2">
+                              {p.isActive && (
+                                <button onClick={() => { setEditingPerson(p); setShowForm(true) }}
+                                  className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
+                                  ✏️ Edit
+                                </button>
+                              )}
+                              <button onClick={() => setConfirmNonaktif(confirmNonaktif === p.id ? null : p.id)}
+                                className={`text-xs px-2 py-1 rounded border transition-colors ${
+                                  p.isActive ? 'text-orange-500 border-orange-200 hover:bg-orange-50' : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                                }`}>
+                                {p.isActive ? '🔒 Nonaktifkan' : '🔓 Aktifkan'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -399,69 +460,120 @@ export default function PersonsClient({
             </label>
           </div>
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Nama Tipe</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Entity</th>
-                <th className="text-center text-xs font-medium text-gray-500 px-6 py-3">Pengurus</th>
-                <th className="text-center text-xs font-medium text-gray-500 px-6 py-3">Status</th>
-                <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {personTypes.filter(t => showInactiveTypes ? true : t.isActive).map(t => (
-                <tr key={t.id} className={`hover:bg-gray-50 ${!t.isActive ? 'opacity-50' : ''}`}>
-                  <td className="px-6 py-3 text-sm font-medium text-gray-900">{t.name}</td>
-                  <td className="px-6 py-3 text-sm text-gray-600">
-                    {entities.find(e => e.id === t.entityId)?.name ?? '-'}
-                  </td>
-                  <td className="px-6 py-3 text-center">
-                    {t.isPengurus ? (
-                      <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full">⭐ Pengurus</span>
-                    ) : (
-                      <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">Jamaah</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-3 text-center">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      t.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {t.isActive ? '✅ Aktif' : '⛔ Nonaktif'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3 text-right">
+            <>
+              {/* Mobile Card Layout - Tipe Person */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {personTypes.filter(t => showInactiveTypes ? true : t.isActive).map(t => (
+                  <div key={t.id} className={`p-4 space-y-2 ${!t.isActive ? 'opacity-50' : ''}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{t.name}</p>
+                        <p className="text-xs text-gray-500">{entities.find(e => e.id === t.entityId)?.name ?? '-'}</p>
+                        <div className="flex gap-2 mt-1">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            t.isPengurus ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {t.isPengurus ? '⭐ Pengurus' : 'Jamaah'}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            t.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {t.isActive ? '✅ Aktif' : '⛔ Nonaktif'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                     {confirmNonaktifType === t.id && (
-                      <div className="flex items-center justify-end gap-2 mb-2">
-                        <span className="text-xs text-orange-600">Yakin nonaktifkan?</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-orange-600">Yakin?</span>
                         <form action={deletePersonType.bind(null, t.id)}>
                           <button type="submit" className="text-xs bg-orange-500 text-white px-2 py-1 rounded">Ya</button>
                         </form>
                         <button onClick={() => setConfirmNonaktifType(null)} className="text-xs text-gray-500 px-2 py-1 rounded border border-gray-200">Batal</button>
                       </div>
                     )}
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex gap-2">
                       {t.isActive && (
                         <button onClick={() => { setEditingType(t); setShowTypeForm(true) }}
-                          className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
+                          className="text-xs text-blue-500 px-3 py-1.5 rounded-lg border border-blue-200">
                           ✏️ Edit
                         </button>
                       )}
-                      <button
-                        onClick={() => setConfirmNonaktifType(confirmNonaktifType === t.id ? null : t.id)}
-                        className={`text-xs px-2 py-1 rounded border transition-colors ${
-                          t.isActive
-                            ? 'text-orange-500 border-orange-200 hover:bg-orange-50'
-                            : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                      <button onClick={() => setConfirmNonaktifType(confirmNonaktifType === t.id ? null : t.id)}
+                        className={`text-xs px-3 py-1.5 rounded-lg border ${
+                          t.isActive ? 'text-orange-500 border-orange-200' : 'text-emerald-600 border-emerald-200'
                         }`}>
                         {t.isActive ? '🔒 Nonaktifkan' : '🔓 Aktifkan'}
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table Layout - Tipe Person */}
+              <div className="hidden md:block">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Nama Tipe</th>
+                      <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Entity</th>
+                      <th className="text-center text-xs font-medium text-gray-500 px-6 py-3">Pengurus</th>
+                      <th className="text-center text-xs font-medium text-gray-500 px-6 py-3">Status</th>
+                      <th className="text-right text-xs font-medium text-gray-500 px-6 py-3">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {personTypes.filter(t => showInactiveTypes ? true : t.isActive).map(t => (
+                      <tr key={t.id} className={`hover:bg-gray-50 ${!t.isActive ? 'opacity-50' : ''}`}>
+                        <td className="px-6 py-3 text-sm font-medium text-gray-900">{t.name}</td>
+                        <td className="px-6 py-3 text-sm text-gray-600">
+                          {entities.find(e => e.id === t.entityId)?.name ?? '-'}
+                        </td>
+                        <td className="px-6 py-3 text-center">
+                          {t.isPengurus ? (
+                            <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full">⭐ Pengurus</span>
+                          ) : (
+                            <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">Jamaah</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-3 text-center">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            t.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {t.isActive ? '✅ Aktif' : '⛔ Nonaktif'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-right">
+                          {confirmNonaktifType === t.id && (
+                            <div className="flex items-center justify-end gap-2 mb-2">
+                              <span className="text-xs text-orange-600">Yakin nonaktifkan?</span>
+                              <form action={deletePersonType.bind(null, t.id)}>
+                                <button type="submit" className="text-xs bg-orange-500 text-white px-2 py-1 rounded">Ya</button>
+                              </form>
+                              <button onClick={() => setConfirmNonaktifType(null)} className="text-xs text-gray-500 px-2 py-1 rounded border border-gray-200">Batal</button>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-end gap-2">
+                            {t.isActive && (
+                              <button onClick={() => { setEditingType(t); setShowTypeForm(true) }}
+                                className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
+                                ✏️ Edit
+                              </button>
+                            )}
+                            <button onClick={() => setConfirmNonaktifType(confirmNonaktifType === t.id ? null : t.id)}
+                              className={`text-xs px-2 py-1 rounded border transition-colors ${
+                                t.isActive ? 'text-orange-500 border-orange-200 hover:bg-orange-50' : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                              }`}>
+                              {t.isActive ? '🔒 Nonaktifkan' : '🔓 Aktifkan'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           </div>
         </div>
       )}
