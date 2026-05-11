@@ -18,7 +18,14 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar role={currentUser.role} />
+      <Sidebar
+        role={currentUser.role}
+        fullName={currentUser.person.fullName}
+        mosqueName={currentUser.mosqueName ?? ''}
+        entityName={currentUser.entityName ?? ''}
+        notifications={notifications}
+        unreadCount={unreadCount}
+      />
       <div className="flex-1 flex flex-col min-w-0">
         <Header
           fullName={currentUser.person.fullName}

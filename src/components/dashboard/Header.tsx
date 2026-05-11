@@ -14,8 +14,10 @@ type HeaderProps = {
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: '⭐ Super Admin',
   KETUA: '👑 Ketua',
+  BENDAHARA: '💰 Bendahara',
   BENDAHARA_DKM: '💰 Bendahara DKM',
   BENDAHARA_YAYASAN: '💰 Bendahara Yayasan',
+  PENGURUS: '🏢 Pengurus',
   VIEWER: '👁️ Viewer',
 }
 
@@ -23,7 +25,7 @@ export default function Header({
   fullName, email, entityName, mosqueName, role, notifications, unreadCount
 }: HeaderProps) {
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+    <header className="hidden md:flex bg-white border-b border-gray-200 px-6 py-3 items-center justify-between">
       <div>
         <p className="text-sm font-semibold text-gray-900">{fullName}</p>
         <div className="flex items-center gap-2 mt-0.5">
@@ -45,12 +47,9 @@ export default function Header({
 
       <div className="flex items-center gap-2">
         <NotificationBell notifications={notifications} unreadCount={unreadCount} />
-
         <form action={logout}>
-          <button
-            type="submit"
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors px-3 py-2 rounded-lg hover:bg-red-50"
-          >
+          <button type="submit"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors px-3 py-2 rounded-lg hover:bg-red-50">
             <span>🚪</span>
             Keluar
           </button>
