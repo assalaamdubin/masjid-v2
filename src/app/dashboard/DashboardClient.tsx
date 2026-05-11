@@ -241,19 +241,19 @@ export default function DashboardClient({
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white rounded-2xl p-5 border border-gray-200">
               <p className="text-xs font-medium text-gray-500 mb-1">Total Saldo Gabungan</p>
-              <p className={`text-xl font-bold ${(totalPemasukan - totalPengeluaran) >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+              <p className={`text-lg font-bold truncate ${(totalPemasukan - totalPengeluaran) >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                 {formatRupiah(totalPemasukan - totalPengeluaran)}
               </p>
               <p className="text-xs text-gray-400 mt-1">Semua entity</p>
             </div>
             <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100">
               <p className="text-xs font-medium text-emerald-600 mb-1">Total Pemasukan</p>
-              <p className="text-xl font-bold text-emerald-700">{formatRupiah(totalPemasukan)}</p>
+              <p className="text-lg font-bold text-emerald-700 truncate">{formatRupiah(totalPemasukan)}</p>
               <p className="text-xs text-emerald-500 mt-1">Semua entity</p>
             </div>
             <div className="bg-red-50 rounded-2xl p-5 border border-red-100">
               <p className="text-xs font-medium text-red-600 mb-1">Total Pengeluaran</p>
-              <p className="text-xl font-bold text-red-600">{formatRupiah(totalPengeluaran)}</p>
+              <p className="text-lg font-bold text-red-600 truncate">{formatRupiah(totalPengeluaran)}</p>
               <p className="text-xs text-red-400 mt-1">Semua entity</p>
             </div>
           </div>
