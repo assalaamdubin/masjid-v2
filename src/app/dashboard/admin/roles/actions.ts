@@ -27,9 +27,11 @@ export async function updateRole(id: string, formData: FormData) {
 
 // Soft delete — nonaktifkan role
 export async function deleteRole(id: string) {
+  const current = await prisma.role.findUnique({ where: { id } })
+  const newIsActive = !current?.isActive
   await prisma.role.update({
     where: { id },
-    data: { isActive: false }
+    data: { isActive: newIsActive }
   })
   revalidatePath('/dashboard/admin/users')
 }
