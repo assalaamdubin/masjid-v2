@@ -27,47 +27,49 @@ model Role {
 
 // ==================== PERSON TYPES ====================
 model PersonType {
-  id          String   @id @default(uuid())
-  name        String
-  entityId    String
-  isPengurus  Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  name       String
+  entityId   String
+  isPengurus Boolean  @default(false)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  entity      Entity   @relation(fields: [entityId], references: [id])
-  persons     Person[]
+  entity  Entity   @relation(fields: [entityId], references: [id])
+  persons Person[]
 
   @@map("person_types")
 }
 
 // ==================== PERSONS ====================
 model Person {
-  id           String        @id @default(uuid())
+  id           String       @id @default(uuid())
   fullName     String
   phoneNumber  String?
-  email        String?       @unique
+  email        String?      @unique
   address      String?
   photoUrl     String?
   personTypeId String?
   entityId     String?
   reportToId   String?
-  isActive     Boolean       @default(true)
-  status       PersonStatus  @default(PENDING)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  isActive     Boolean      @default(true)
+  status       PersonStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
-  personType    PersonType?    @relation(fields: [personTypeId], references: [id])
-  entity        Entity?        @relation(fields: [entityId], references: [id])
-  reportTo      Person?        @relation("ReportTo", fields: [reportToId], references: [id])
-  subordinates  Person[]       @relation("ReportTo")
-  user          User?
-  entityMembers EntityMember[]
-  transactions  Transaction[]
-  notifications Notification[]
-  approvalLogs  ApprovalLog[]
-  auditLogs     AuditLog[]
-  comments      TransactionComment[]
+  personType      PersonType?          @relation(fields: [personTypeId], references: [id])
+  entity          Entity?              @relation(fields: [entityId], references: [id])
+  reportTo        Person?              @relation("ReportTo", fields: [reportToId], references: [id])
+  subordinates    Person[]             @relation("ReportTo")
+  user            User?
+  entityMembers   EntityMember[]
+  transactions    Transaction[]
+  notifications   Notification[]
+  approvalLogs    ApprovalLog[]
+  auditLogs       AuditLog[]
+  comments        TransactionComment[]
+  kegiatanDibuat  Kegiatan[]
+  kegiatanPanitia KegiatanPanitia[]
 
   @@map("persons")
 }
@@ -91,25 +93,25 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  person       Person    @relation(fields: [personId], references: [id])
+  person Person @relation(fields: [personId], references: [id])
 
   @@map("users")
 }
 
 // ==================== MOSQUE ====================
 model Mosque {
-  id          String   @id @default(uuid())
-  name        String
-  address     String?
-  city        String?
-  province    String?
-  phone       String?
-  email       String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  city      String?
+  province  String?
+  phone     String?
+  email     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  entities    Entity[]
+  entities Entity[]
 
   @@map("mosques")
 }
@@ -134,6 +136,7 @@ model Entity {
   personTypes  PersonType[]
   persons      Person[]
   roles        Role[]
+  kegiatans    Kegiatan[]
 
   @@map("entities")
 }
@@ -145,19 +148,19 @@ enum EntityType {
 
 // ==================== ENTITY MEMBERS ====================
 model EntityMember {
-  id          String  @id @default(uuid())
+  id          String     @id @default(uuid())
   personId    String
   entityId    String
   role        MemberRole
   roleId      String?
-  isBendahara Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  joinedAt    DateTime @default(now())
-  createdAt   DateTime @default(now())
+  isBendahara Boolean    @default(false)
+  isActive    Boolean    @default(true)
+  joinedAt    DateTime   @default(now())
+  createdAt   DateTime   @default(now())
 
-  person    Person   @relation(fields: [personId], references: [id])
-  entity    Entity   @relation(fields: [entityId], references: [id])
-  roleRef   Role?    @relation(fields: [roleId], references: [id])
+  person  Person @relation(fields: [personId], references: [id])
+  entity  Entity @relation(fields: [entityId], references: [id])
+  roleRef Role?  @relation(fields: [roleId], references: [id])
 
   @@unique([personId, entityId])
   @@map("entity_members")
@@ -184,8 +187,9 @@ model Category {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  entity       Entity        @relation(fields: [entityId], references: [id])
-  transactions Transaction[]
+  entity          Entity           @relation(fields: [entityId], references: [id])
+  transactions    Transaction[]
+  kegiatanBudgets KegiatanBudget[]
 
   @@map("categories")
 }
@@ -209,12 +213,14 @@ model Transaction {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
-  entity          Entity        @relation(fields: [entityId], references: [id])
-  category        Category      @relation(fields: [categoryId], references: [id])
-  createdBy       Person        @relation(fields: [createdById], references: [id])
-  approvalLogs    ApprovalLog[]
-  notifications   Notification[]
-  comments        TransactionComment[]
+  entity        Entity               @relation(fields: [entityId], references: [id])
+  category      Category             @relation(fields: [categoryId], references: [id])
+  createdBy     Person               @relation(fields: [createdById], references: [id])
+  approvalLogs  ApprovalLog[]
+  notifications Notification[]
+  comments      TransactionComment[]
+  kegiatanId    String?
+  kegiatan      Kegiatan?            @relation(fields: [kegiatanId], references: [id])
 
   @@map("transactions")
 }
@@ -243,8 +249,8 @@ model ApprovalLog {
   note          String?
   createdAt     DateTime       @default(now())
 
-  transaction   Transaction    @relation(fields: [transactionId], references: [id])
-  approver      Person?        @relation(fields: [approverId], references: [id])
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  approver    Person?     @relation(fields: [approverId], references: [id])
 
   @@map("approval_logs")
 }
@@ -266,8 +272,8 @@ model Notification {
   transactionId String?
   createdAt     DateTime         @default(now())
 
-  person        Person       @relation(fields: [personId], references: [id])
-  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+  person      Person       @relation(fields: [personId], references: [id])
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
 
   @@map("notifications")
 }
@@ -278,7 +284,6 @@ enum NotificationType {
   APPROVAL_REJECTED
   INFO
 }
-
 
 // ==================== AUDIT LOG ====================
 model AuditLog {
@@ -292,7 +297,7 @@ model AuditLog {
   personName  String
   createdAt   DateTime @default(now())
 
-  person      Person?  @relation(fields: [personId], references: [id])
+  person Person? @relation(fields: [personId], references: [id])
 
   @@map("audit_logs")
 }
@@ -305,11 +310,70 @@ model TransactionComment {
   message       String
   createdAt     DateTime @default(now())
 
-  transaction   Transaction @relation(fields: [transactionId], references: [id])
-  person        Person      @relation(fields: [personId], references: [id])
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  person      Person      @relation(fields: [personId], references: [id])
 
   @@map("transaction_comments")
 }
+
+// ==================== KEGIATAN ====================
+model Kegiatan {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  location    String?
+  status      KegiatanStatus @default(PLANNED)
+  entityId    String
+  createdById String
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  entity       Entity            @relation(fields: [entityId], references: [id])
+  createdBy    Person            @relation(fields: [createdById], references: [id])
+  panitia      KegiatanPanitia[]
+  transactions Transaction[]
+  budgets      KegiatanBudget[]
+
+  @@map("kegiatan")
+}
+
+model KegiatanPanitia {
+  id         String   @id @default(uuid())
+  kegiatanId String
+  personId   String
+  jabatan    String
+  createdAt  DateTime @default(now())
+
+  kegiatan Kegiatan @relation(fields: [kegiatanId], references: [id])
+  person   Person   @relation(fields: [personId], references: [id])
+
+  @@map("kegiatan_panitia")
+}
+
+model KegiatanBudget {
+  id           String   @id @default(uuid())
+  kegiatanId   String
+  categoryId   String
+  budgetAmount Decimal  @db.Decimal(15, 2)
+  description  String?
+  createdAt    DateTime @default(now())
+
+  kegiatan Kegiatan @relation(fields: [kegiatanId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@map("kegiatan_budget")
+}
+
+enum KegiatanStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
 // ==================== MOSQUE PROFILE ====================
 model MosqueProfile {
   id            String   @id @default(uuid())
