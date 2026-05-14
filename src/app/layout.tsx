@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { headers } from 'next/headers'
 
-const inter = Inter({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], display: 'swap', variable: '--font-inter' })
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'As-Salaam Mosque Management System',
@@ -24,7 +24,7 @@ export default async function RootLayout({
         <meta httpEquiv="Content-Security-Policy" 
           content={`script-src 'self' 'nonce-${nonce}'`} />
       </head>
-      <body className={inter.variable + " font-sans"} suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
         {children}
       </body>
     </html>
