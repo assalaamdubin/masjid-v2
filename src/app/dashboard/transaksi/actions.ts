@@ -15,6 +15,7 @@ export async function createTransaksi(formData: FormData, entityId: string, pers
   const payerName = formData.get('payerName') as string
   const paymentMethod = formData.get('paymentMethod') as string
   const attachmentUrl = formData.get('attachmentUrl') as string
+  const kegiatanId = formData.get('kegiatanId') as string
   const isExpense = type === 'EXPENSE'
 
   const transaction = await prisma.transaction.create({
@@ -30,6 +31,7 @@ export async function createTransaksi(formData: FormData, entityId: string, pers
       attachmentUrl: attachmentUrl || null,
       createdById: personId,
       approvalStatus: isExpense ? 'PENDING_APPROVAL' : 'APPROVED',
+      kegiatanId: kegiatanId || null,
     }
   })
 
@@ -55,6 +57,7 @@ export async function createTransaksi(formData: FormData, entityId: string, pers
 
   revalidatePath('/dashboard/transaksi')
   revalidatePath('/dashboard')
+  revalidatePath('/dashboard/kegiatan')
 }
 
 export async function updateTransaksi(id: string, formData: FormData) {
@@ -81,6 +84,7 @@ export async function updateTransaksi(id: string, formData: FormData) {
 
   revalidatePath('/dashboard/transaksi')
   revalidatePath('/dashboard')
+  revalidatePath('/dashboard/kegiatan')
 }
 
 // Soft delete — cancel transaksi
@@ -91,6 +95,7 @@ export async function deleteTransaksi(id: string) {
   })
   revalidatePath('/dashboard/transaksi')
   revalidatePath('/dashboard')
+  revalidatePath('/dashboard/kegiatan')
 }
 
 export async function updateAttachment(id: string, attachmentUrl: string) {
