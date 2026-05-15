@@ -6,7 +6,7 @@ export default async function KegiatanPage() {
   const currentUser = await getCurrentUser()
   const { entityIds, isAdmin } = currentUser
 
-  const [kegiatan, entities, persons] = await Promise.all([
+  const [kegiatan, entities, persons, kategori] = await Promise.all([
     prisma.kegiatan.findMany({
       where: { entityId: { in: entityIds } },
       include: {
@@ -21,13 +21,15 @@ export default async function KegiatanPage() {
       },
       orderBy: { startDate: 'desc' }
     }),
-    prisma.entity.findMany({
-      where: { id: { in: entityIds }, isActive: true }
-    }),
+    prisma.entity.findMany({ where: { id: { in: entityIds }, isActive: true } }),
     prisma.person.findMany({
       where: { entityId: { in: entityIds }, isActive: true },
       orderBy: { fullName: 'asc' }
-    })
+    }),
+    prisma.category.findMany({
+      where: { entityId: { in: entityIds }, isActive: true },
+      include: { entity: true }
+    }),
   ])
 
   return (
@@ -35,6 +37,7 @@ export default async function KegiatanPage() {
       initialData={kegiatan}
       entities={entities}
       persons={persons}
+      kategori={kategori}
       currentPersonId={currentUser.person.id}
       isAdmin={isAdmin}
     />
