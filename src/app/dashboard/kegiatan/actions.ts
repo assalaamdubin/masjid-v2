@@ -57,9 +57,9 @@ export async function deleteKegiatan(id: string) {
   revalidatePath('/dashboard/kegiatan')
 }
 
-export async function addPanitia(kegiatanId: string, personId: string, jabatan: string) {
+export async function addPanitia(kegiatanId: string, personId: string, jabatan: string, reportToId?: string) {
   await prisma.kegiatanPanitia.create({
-    data: { kegiatanId, personId, jabatan }
+    data: { kegiatanId, personId, jabatan, reportToId: reportToId || null }
   })
 
   revalidatePath('/dashboard/kegiatan')

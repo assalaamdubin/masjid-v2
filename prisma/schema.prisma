@@ -341,14 +341,17 @@ model Kegiatan {
 }
 
 model KegiatanPanitia {
-  id         String   @id @default(uuid())
-  kegiatanId String
-  personId   String
-  jabatan    String
-  createdAt  DateTime @default(now())
+  id          String   @id @default(uuid())
+  kegiatanId  String
+  personId    String
+  jabatan     String
+  reportToId  String?
+  createdAt   DateTime @default(now())
 
-  kegiatan Kegiatan @relation(fields: [kegiatanId], references: [id])
-  person   Person   @relation(fields: [personId], references: [id])
+  kegiatan     Kegiatan         @relation(fields: [kegiatanId], references: [id])
+  person       Person           @relation(fields: [personId], references: [id])
+  reportTo     KegiatanPanitia? @relation("PanitiaHierarchy", fields: [reportToId], references: [id])
+  subordinates KegiatanPanitia[] @relation("PanitiaHierarchy")
 
   @@map("kegiatan_panitia")
 }

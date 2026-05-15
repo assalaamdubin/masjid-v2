@@ -12,7 +12,13 @@ export default async function KegiatanPage() {
       include: {
         entity: true,
         createdBy: true,
-        panitia: { include: { person: true } },
+        panitia: {
+          include: {
+            person: true,
+            reportTo: { include: { person: true } },
+            subordinates: { include: { person: true } }
+          }
+        },
         transactions: {
           where: { approvalStatus: 'APPROVED' },
           include: { category: true }

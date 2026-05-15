@@ -1,14 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { createKegiatan, updateKegiatan, deleteKegiatan, addPanitia, removePanitia } from './actions'
+import { createKegiatan, updateKegiatan, addPanitia, removePanitia } from './actions'
 import { createTransaksi } from '../transaksi/actions'
 
 type Person = { id: string; fullName: string }
 type Entity = { id: string; name: string; type: string }
-type Panitia = { id: string; jabatan: string; person: Person }
-type Budget = { id: string; budgetAmount: any; description: string | null; category: { name: string; type: string } }
+type Panitia = {
+  id: string
+  jabatan: string
+  reportToId: string | null
+  person: Person
+  reportTo: { id: string; jabatan: string; person: Person } | null
+  subordinates: { id: string; jabatan: string; person: Person }[]
+}
 type Transaction = { id: string; amount: any; type: string; description: string | null; category: { name: string } }
+type Budget = { id: string; budgetAmount: any; description: string | null; category: { name: string; type: string } }
 type Kegiatan = {
   id: string
   name: string
@@ -40,6 +47,34 @@ function formatRupiah(amount: any) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(amount))
 }
 
+function PanitiaNode({ p, level, onRemove }: { p: Panitia; level: number; onRemove: (id: string) => void }) {
+  return (
+    <div className={level > 0 ? 'ml-6 border-l-2 border-emerald-100 pl-3' : ''}>
+      <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 mb-2 border border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${
+            level === 0 ? 'bg-emerald-600' : level === 1 ? 'bg-blue-500' : 'bg-gray-400'
+          }`}>
+            {p.person.fullName.charAt(0)}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-900">{p.person.fullName}</p>
+            <p className="text-xs text-gray-500">{p.jabatan}</p>
+          </div>
+        </div>
+        <form action={removePanitia.bind(null, p.id)}>
+          <button type="submit" className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded border border-red-100 hover:bg-red-50">
+            Hapus
+          </button>
+        </form>
+      </div>
+      {p.subordinates?.map(sub => (
+        <PanitiaNode key={sub.id} p={sub as any} level={level + 1} onRemove={onRemove} />
+      ))}
+    </div>
+  )
+}
+
 export default function KegiatanClient({
   initialData,
   entities,
@@ -63,6 +98,7 @@ export default function KegiatanClient({
   const [addingPanitia, setAddingPanitia] = useState(false)
   const [panitiaPersonId, setPanitiaPersonId] = useState('')
   const [panitiaJabatan, setPanitiaJabatan] = useState('')
+  const [panitiaReportToId, setPanitiaReportToId] = useState('')
   const [showTrxForm, setShowTrxForm] = useState(false)
   const [trxType, setTrxType] = useState('INCOME')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -72,19 +108,8 @@ export default function KegiatanClient({
   )
 
   const selectedKegiatan = initialData.find(k => k.id === selectedKegiatanId) ?? null
+  const rootPanitia = selectedKegiatan?.panitia.filter(p => !p.reportToId) ?? []
 
-  function openDetail(kegiatan: Kegiatan) {
-    setSelectedKegiatanId(kegiatan.id)
-    setActiveTab('panitia')
-  }
-
-  function openEdit(kegiatan: Kegiatan) {
-    setEditingKegiatan(kegiatan)
-    setShowForm(true)
-    setSelectedKegiatanId(null)
-  }
-
-  // Laporan
   const totalPemasukan = selectedKegiatan?.transactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + Number(t.amount), 0) ?? 0
   const totalPengeluaran = selectedKegiatan?.transactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + Number(t.amount), 0) ?? 0
   const totalBudget = selectedKegiatan?.budgets.reduce((s, b) => s + Number(b.budgetAmount), 0) ?? 0
@@ -123,11 +148,8 @@ export default function KegiatanClient({
             {editingKegiatan ? '✏️ Edit Kegiatan' : '+ Tambah Kegiatan Baru'}
           </h3>
           <form action={async (formData) => {
-            if (editingKegiatan) {
-              await updateKegiatan(editingKegiatan.id, formData)
-            } else {
-              await createKegiatan(formData, selectedEntityId, currentPersonId)
-            }
+            if (editingKegiatan) await updateKegiatan(editingKegiatan.id, formData)
+            else await createKegiatan(formData, selectedEntityId, currentPersonId)
             setShowForm(false)
             setEditingKegiatan(null)
           }} className="space-y-4">
@@ -202,7 +224,6 @@ export default function KegiatanClient({
       {/* Detail Panel */}
       {selectedKegiatan && (
         <div className="bg-white rounded-2xl border border-emerald-200 overflow-hidden">
-          {/* Detail Header */}
           <div className="p-4 bg-emerald-50 border-b border-emerald-100 flex items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -217,13 +238,16 @@ export default function KegiatanClient({
                 {selectedKegiatan.endDate ? ` — ${formatDate(selectedKegiatan.endDate)}` : ''}
                 {selectedKegiatan.location ? ` • 📍 ${selectedKegiatan.location}` : ''}
               </p>
+              {selectedKegiatan.description && (
+                <p className="text-xs text-gray-600 mt-1">{selectedKegiatan.description}</p>
+              )}
             </div>
             <button onClick={() => setSelectedKegiatanId(null)}
               className="text-gray-400 hover:text-gray-600 text-xl font-bold flex-shrink-0">✕</button>
           </div>
 
           {/* Summary */}
-          <div className="grid grid-cols-3 gap-0 border-b border-gray-100">
+          <div className="grid grid-cols-3 border-b border-gray-100">
             <div className="p-4 text-center border-r border-gray-100">
               <p className="text-xs text-blue-600 font-medium">Budget</p>
               <p className="text-sm font-bold text-blue-700 truncate">{formatRupiah(totalBudget)}</p>
@@ -243,11 +267,10 @@ export default function KegiatanClient({
             {(['panitia', 'transaksi', 'laporan'] as const).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)}
                 className={`flex-1 py-3 text-sm font-medium transition-colors ${
-                  activeTab === tab
-                    ? 'text-emerald-600 border-b-2 border-emerald-600'
-                    : 'text-gray-500 hover:text-gray-700'
+                  activeTab === tab ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-500 hover:text-gray-700'
                 }`}>
-                {tab === 'panitia' ? '👥 Panitia' : tab === 'transaksi' ? '💰 Transaksi' : '📊 Laporan'}
+                {tab === 'panitia' ? `👥 Panitia (${selectedKegiatan.panitia.length})` :
+                 tab === 'transaksi' ? `💰 Transaksi (${selectedKegiatan.transactions.length})` : '📊 Laporan'}
               </button>
             ))}
           </div>
@@ -256,7 +279,11 @@ export default function KegiatanClient({
           {activeTab === 'panitia' && (
             <div className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-gray-700">Daftar Panitia ({selectedKegiatan.panitia.length})</p>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span> Level 1
+                  <span className="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> Level 2
+                  <span className="w-3 h-3 rounded-full bg-gray-400 inline-block"></span> Level 3+
+                </div>
                 <button onClick={() => setAddingPanitia(!addingPanitia)}
                   className="text-xs text-emerald-600 px-3 py-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-50">
                   + Tambah Panitia
@@ -265,23 +292,40 @@ export default function KegiatanClient({
 
               {addingPanitia && (
                 <div className="bg-emerald-50 rounded-xl p-4 space-y-3 border border-emerald-200">
-                  <select value={panitiaPersonId} onChange={e => setPanitiaPersonId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    <option value="">Pilih person...</option>
-                    {persons.filter(p => !selectedKegiatan.panitia.find(kp => kp.person.id === p.id)).map(p => (
-                      <option key={p.id} value={p.id}>{p.fullName}</option>
-                    ))}
-                  </select>
-                  <input value={panitiaJabatan} onChange={e => setPanitiaJabatan(e.target.value)}
-                    placeholder="Jabatan (contoh: Ketua Panitia)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Person *</label>
+                    <select value={panitiaPersonId} onChange={e => setPanitiaPersonId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      <option value="">Pilih person...</option>
+                      {persons.filter(p => !selectedKegiatan.panitia.find(kp => kp.person.id === p.id)).map(p => (
+                        <option key={p.id} value={p.id}>{p.fullName}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Jabatan *</label>
+                    <input value={panitiaJabatan} onChange={e => setPanitiaJabatan(e.target.value)}
+                      placeholder="Contoh: Ketua Panitia, Bendahara, Sekretaris..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Atasan (Opsional)</label>
+                    <select value={panitiaReportToId} onChange={e => setPanitiaReportToId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      <option value="">Tidak ada atasan</option>
+                      {selectedKegiatan.panitia.map(p => (
+                        <option key={p.id} value={p.id}>{p.person.fullName} — {p.jabatan}</option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="flex gap-2">
                     <button onClick={async () => {
                       if (!panitiaPersonId || !panitiaJabatan) return
-                      await addPanitia(selectedKegiatan.id, panitiaPersonId, panitiaJabatan)
+                      await addPanitia(selectedKegiatan.id, panitiaPersonId, panitiaJabatan, panitiaReportToId || undefined)
                       setAddingPanitia(false)
                       setPanitiaPersonId('')
                       setPanitiaJabatan('')
+                      setPanitiaReportToId('')
                     }} className="flex-1 bg-emerald-600 text-white text-sm py-2 rounded-lg">
                       Simpan
                     </button>
@@ -299,24 +343,9 @@ export default function KegiatanClient({
                   <p className="text-sm">Belum ada panitia</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {selectedKegiatan.panitia.map(p => (
-                    <div key={p.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center text-sm font-bold text-emerald-700">
-                          {p.person.fullName.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">{p.person.fullName}</p>
-                          <p className="text-xs text-gray-500">{p.jabatan}</p>
-                        </div>
-                      </div>
-                      <form action={removePanitia.bind(null, p.id)}>
-                        <button type="submit" className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded border border-red-200 hover:bg-red-50">
-                          Hapus
-                        </button>
-                      </form>
-                    </div>
+                <div className="space-y-1">
+                  {rootPanitia.map(p => (
+                    <PanitiaNode key={p.id} p={p} level={0} onRemove={() => {}} />
                   ))}
                 </div>
               )}
@@ -327,7 +356,7 @@ export default function KegiatanClient({
           {activeTab === 'transaksi' && (
             <div className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-gray-700">Transaksi Kegiatan ({selectedKegiatan.transactions.length})</p>
+                <p className="text-sm font-semibold text-gray-700">Transaksi Kegiatan</p>
                 <button onClick={() => setShowTrxForm(!showTrxForm)}
                   className="text-xs text-emerald-600 px-3 py-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-50">
                   + Tambah Transaksi
@@ -384,7 +413,7 @@ export default function KegiatanClient({
                     <div className="flex gap-2">
                       <button type="submit"
                         className={`flex-1 text-white text-sm py-2 rounded-lg ${trxType === 'EXPENSE' ? 'bg-red-500' : 'bg-emerald-600'}`}>
-                        Simpan
+                        {trxType === 'EXPENSE' ? '📤 Simpan & Ajukan Approval' : '💾 Simpan'}
                       </button>
                       <button type="button" onClick={() => setShowTrxForm(false)}
                         className="flex-1 text-gray-500 text-sm py-2 rounded-lg border border-gray-300">
@@ -425,33 +454,26 @@ export default function KegiatanClient({
           {/* Tab: Laporan */}
           {activeTab === 'laporan' && (
             <div className="p-4 space-y-4">
-              <p className="text-sm font-semibold text-gray-700">📊 Laporan Kegiatan: {selectedKegiatan.name}</p>
-
-              {/* Summary */}
-              <div className="grid grid-cols-1 gap-3">
-                <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm text-emerald-700 font-medium">Total Pemasukan</p>
-                    <p className="text-lg font-bold text-emerald-700">{formatRupiah(totalPemasukan)}</p>
-                  </div>
+              <p className="text-sm font-semibold text-gray-700">📊 Laporan: {selectedKegiatan.name}</p>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center bg-emerald-50 rounded-xl px-4 py-3 border border-emerald-100">
+                  <p className="text-sm text-emerald-700 font-medium">Total Pemasukan</p>
+                  <p className="text-base font-bold text-emerald-700">{formatRupiah(totalPemasukan)}</p>
                 </div>
-                <div className="bg-red-50 rounded-xl p-4 border border-red-100">
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm text-red-700 font-medium">Total Pengeluaran</p>
-                    <p className="text-lg font-bold text-red-700">{formatRupiah(totalPengeluaran)}</p>
-                  </div>
+                <div className="flex justify-between items-center bg-red-50 rounded-xl px-4 py-3 border border-red-100">
+                  <p className="text-sm text-red-700 font-medium">Total Pengeluaran</p>
+                  <p className="text-base font-bold text-red-700">{formatRupiah(totalPengeluaran)}</p>
                 </div>
-                <div className={`rounded-xl p-4 border ${totalPemasukan - totalPengeluaran >= 0 ? 'bg-blue-50 border-blue-100' : 'bg-orange-50 border-orange-100'}`}>
-                  <div className="flex justify-between items-center">
-                    <p className={`text-sm font-medium ${totalPemasukan - totalPengeluaran >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>Saldo Kegiatan</p>
-                    <p className={`text-lg font-bold ${totalPemasukan - totalPengeluaran >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>
-                      {formatRupiah(totalPemasukan - totalPengeluaran)}
-                    </p>
-                  </div>
+                <div className={`flex justify-between items-center rounded-xl px-4 py-3 border ${
+                  totalPemasukan - totalPengeluaran >= 0 ? 'bg-blue-50 border-blue-100' : 'bg-orange-50 border-orange-100'
+                }`}>
+                  <p className={`text-sm font-medium ${totalPemasukan - totalPengeluaran >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>Saldo Kegiatan</p>
+                  <p className={`text-base font-bold ${totalPemasukan - totalPengeluaran >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>
+                    {formatRupiah(totalPemasukan - totalPengeluaran)}
+                  </p>
                 </div>
               </div>
 
-              {/* Rekap per kategori */}
               {selectedKegiatan.transactions.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Rekap per Kategori</p>
@@ -459,11 +481,11 @@ export default function KegiatanClient({
                     {Object.entries(
                       selectedKegiatan.transactions.reduce((acc, t) => {
                         const key = t.category.name
-                        if (!acc[key]) acc[key] = { income: 0, expense: 0, type: t.type }
+                        if (!acc[key]) acc[key] = { income: 0, expense: 0 }
                         if (t.type === 'INCOME') acc[key].income += Number(t.amount)
                         else acc[key].expense += Number(t.amount)
                         return acc
-                      }, {} as Record<string, { income: number; expense: number; type: string }>)
+                      }, {} as Record<string, { income: number; expense: number }>)
                     ).map(([name, val]) => (
                       <div key={name} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
                         <p className="text-sm text-gray-700">{name}</p>
@@ -507,9 +529,7 @@ export default function KegiatanClient({
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${status.color}`}>
                           {status.icon} {status.label}
                         </span>
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                          {k.entity.name}
-                        </span>
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{k.entity.name}</span>
                       </div>
                       <h3 className="text-base font-bold text-gray-900">{k.name}</h3>
                       <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-gray-500">
@@ -520,22 +540,19 @@ export default function KegiatanClient({
                       </div>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
-                      <button onClick={() => openEdit(k)}
+                      <button onClick={() => { setEditingKegiatan(k); setShowForm(true); setSelectedKegiatanId(null) }}
                         className="text-xs text-blue-500 px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-50">
                         ✏️ Edit
                       </button>
-                      <button onClick={() => openDetail(k)}
+                      <button onClick={() => { setSelectedKegiatanId(isSelected ? null : k.id); setActiveTab('panitia') }}
                         className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                          isSelected
-                            ? 'bg-emerald-600 text-white border-emerald-600'
-                            : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                          isSelected ? 'bg-emerald-600 text-white border-emerald-600' : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
                         }`}>
                         {isSelected ? '🔼 Tutup' : '🔽 Detail'}
                       </button>
                     </div>
                   </div>
 
-                  {/* Summary mini */}
                   <div className="grid grid-cols-3 gap-2 mt-3">
                     <div className="bg-blue-50 rounded-lg p-2 text-center">
                       <p className="text-xs text-blue-600">Budget</p>
